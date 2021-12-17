@@ -5,15 +5,25 @@
 Приступим. Необходимо выполнить следующие команды в терминале под рутом:
 
 yum install -y python36-virtualenv postgresql-server
+
 cd /opt
+
 mkdir smartyard
+
 virtualenv-3.6 smartyard
+
 smartyard/bin/pip install flask
+
 smartyard/bin/pip install psycopg2-binary
+
 smartyard/bin/pip install smartyard/bin/pip install
+
 smartyard/bin/pip install Flask-Migrate
+
 cd smartyard
+
 su - postgres
+
 psql
 CREATE DATABASE smartyard WITH OWNER "smartyard" ENCODING 'UTF8';
 postgres=# DROP DATABASE smartyard;

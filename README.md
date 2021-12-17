@@ -25,13 +25,23 @@ cd smartyard
 su - postgres
 
 psql
+
 CREATE DATABASE smartyard WITH OWNER "smartyard" ENCODING 'UTF8';
+
 postgres=# DROP DATABASE smartyard;
+
 postgres=# GRANT ALL PRIVILEGES ON DATABASE smartyard TO smartyard;
+
 \q
+
 exit
+
 export FLASK_APP=app.py
+
 bin/flask db init
+
 bin/flask db migrate
+
 bin/flask db upgrade
+
 ./app.py

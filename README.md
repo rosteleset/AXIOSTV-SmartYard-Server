@@ -53,6 +53,8 @@ bin/flask db upgrade
 
 ./app.py
 
+
+
 Далее необходимо настроить nginx, добовив в конфиг следующие строчки:
  
  location /api {

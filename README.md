@@ -27,7 +27,7 @@ smartyard/bin/pip install smartyard/bin/pip install
 
 smartyard/bin/pip install Flask-Migrate
 
-smartyard/bin/pip python-dotenv
+smartyard/bin/pip install python-dotenv
 
 cd smartyard
 

@@ -1,17 +1,24 @@
 #!bin/python
-import random, uuid
+import random, uuid, os
 from random import randint
 from flask import Flask, jsonify, request, make_response, abort
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import exists
-import uuid
+from dotenv import load_dotenv
+
+dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
+if os.path.exists(dotenv_path):
+    load_dotenv(dotenv_path)
+else:
+    print('not loaded .env file')
+    exit()
 
 app = Flask(__name__)
 app.config['JSON_AS_ASCII'] = False
 
-app.config['SQLALCHEMY_DATABASE_URI'] = "postgresql://smartyard:smartyardpass@localhost:5432/smartyard"
+app.config['SQLALCHEMY_DATABASE_URI'] = "postgresql://" + os.getenv('PG_USER') + ":" + os.getenv('PG_PASS') + "@" + os.getenv("PG_HOST") + ":5432/" + os.getenv('PG_DBNAME')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)

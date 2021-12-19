@@ -27,7 +27,11 @@ smartyard/bin/pip install smartyard/bin/pip install
 
 smartyard/bin/pip install Flask-Migrate
 
+smartyard/bin/pip python-dotenv
+
 cd smartyard
+
+mv example.env .env
 
 su - postgres
 

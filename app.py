@@ -1,5 +1,5 @@
 #!bin/python
-import random, uuid, os
+import random, uuid, os, json
 from random import randint
 from flask import Flask, jsonify, request, make_response, abort
 from flask_sqlalchemy import SQLAlchemy
@@ -55,6 +55,15 @@ class Users(db.Model):
     def __repr__(self):
         return f""
 
+def access_verification(key):
+    global response
+    if not key.get('Authorization'):
+        response = {'code':422,'name':'Отсутствует токен авторизации','message':'Отсутствует токен авторизации'}
+        abort (422)
+    if not db.session.query(db.session.query(Users).filter_by(uuid=key.get('Authorization')[7:]).exists()).scalar():
+        response = {'code':401,'name':'Не авторизован','message':'Не авторизован'}
+        abort (401)
+
 @app.route('/api/')
 def index():
     return "Hello, World!"
@@ -62,15 +71,7 @@ def index():
 @app.route('/api/address/access', methods=['POST'])
 def address_access():
     global response
-    if not request.headers:
-        response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
-        abort (422)
-    if not request.headers.get('Authorization'):
-        response = {'code':422,'name':'Отсутствует токен авторизации','message':'Отсутствует токен авторизации'}
-        abort (422)
-    if not db.session.query(db.session.query(Users).filter_by(uuid=request.headers.get('Authorization')[7:]).exists()).scalar():
-        response = {'code':401,'name':'Не авторизован','message':'Не авторизован'}
-        abort (401)
+    access_verification(request.headers)
     if not request.get_json():
         response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
         abort (422)
@@ -91,50 +92,27 @@ def address_access():
         response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
         abort (422)
     expire = request_data['expire']
-    return ""
+    response = app.response_class(status=204, mimetype='application/json')
+    return response
 
 @app.route('/api/address/getAddressList', methods=['POST'])
 def address_getAddressList():
     global response
-    if not request.headers:
-        response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
-        abort (422)
-    if not request.headers.get('Authorization'):
-        response = {'code':422,'name':'Отсутствует токен авторизации','message':'Отсутствует токен авторизации'}
-        abort (422)
-    if not db.session.query(db.session.query(Users).filter_by(uuid=request.headers.get('Authorization')[7:]).exists()).scalar():
-        response = {'code':401,'name':'Не авторизован','message':'Не авторизован'}
-        abort (401)
+    access_verification(request.headers)
     response = {'code':200,'name':'OK','message':'Хорошо','data':[{'houseId':'19260','address':'Тамбов, ул. Верховая, дом 17','hasPlog':'t','doors':[{'domophoneId':'343','doorId':0,'entrance':'1','icon':'entrance','name':'Подъезд'},{'domophoneId':'70','doorId':0,'entrance':'1','icon':'entrance','name':'Подъезд 1'},{'domophoneId':'124','doorId':0,'icon':'entrance','name':'Подъезд 2'}],'cctv':2},{'houseId':'6694','address':'Тамбов, ул. Пионерская, дом 5\'б\'','hasPlog':'t','doors':[{'domophoneId':'79','doorId':0,'entrance':'3','icon':'entrance','name':'Подъезд'},{'domophoneId':'75','doorId':0,'icon':'wicket','name':'Калитка'},{'domophoneId':'297','doorId':0,'icon':'wicket','name':'Калитка доп'},{'domophoneId':'131','doorId':0,'icon':'gate','name':'Ворота'}],'cctv':14}]}
     return jsonify(response)
 
 @app.route('/api/address/getSettingsList', methods=['POST'])
 def address_getSettingsList():
     global response
-    if not request.headers:
-        response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
-        abort (422)
-    if not request.headers.get('Authorization'):
-        response = {'code':422,'name':'Отсутствует токен авторизации','message':'Отсутствует токен авторизации'}
-        abort (422)
-    if not db.session.query(db.session.query(Users).filter_by(uuid=request.headers.get('Authorization')[7:]).exists()).scalar():
-        response = {'code':401,'name':'Не авторизован','message':'Не авторизован'}
-        abort (401)
+    access_verification(request.headers)
     response = {'code':200,'name':'OK','message':'Хорошо','data':[{'hasPlog':'t','contractName':'ФЛ-85973\/20','clientId':'91052','contractOwner':'t','clientName':'Бивард-00011 (Чемодан 2)','services':['internet','cctv','domophone'],'lcab':'https:\/\/lc.lanta.me\/?auth=Zjg1OTczOmY5NzkzNTQzM2U5YmQ5ZThkYTJiZmU2MWMwNDlkZGMy','houseId':'19260','flatId':'136151','flatNumber':'1','flatOwner':'t','address':'Тамбов, ул. Верховая, дом 17, кв 1','hasGates':'f','roommates':[{'phone':'79051202936','expire':'3001-01-01 00:00:00','type':'inner'},{'phone':'79106599009','expire':'3001-01-01 00:00:00','type':'inner'},{'phone':'79156730435','expire':'3001-01-01 00:00:00','type':'inner'},{'phone':'79641340000','expire':'3000-01-01 00:00:00','type':'inner'},{'phone':'79641340000','expire':'3001-01-01 00:00:00','type':'inner'}]},{'hasPlog':'t','services':['cctv','domophone'],'houseId':'19260','flatId':'136162','flatNumber':'12','flatOwner':'f','address':'Тамбов, ул. Верховая, дом 17, кв 12','hasGates':'f','roommates':[{'phone':'79176194895','expire':'3001-01-01 00:00:00','type':'inner'},{'phone':'79202313789','expire':'3001-01-01 00:00:00','type':'inner'}]},{'hasPlog':'t','services':['cctv','domophone'],'houseId':'6694','flatId':'306','flatNumber':'69','flatOwner':'f','address':'Тамбов, ул. Пионерская, дом 5\'б\', кв 69','hasGates':'t','roommates':[{'phone':'79069202020','expire':'3001-01-01 00:00:00','type':'inner'},{'phone':'79641349232','expire':'3001-01-01 00:00:00','type':'inner'},{'phone':'79091215044','expire':'3001-01-01 00:00:00','type':'inner'},{'phone':'79127600769','expire':'3001-01-01 00:00:00','type':'inner'},{'phone':'79106500155','expire':'3001-01-01 00:00:00','type':'inner'},{'phone':'79514470944','expire':'3001-01-01 00:00:00','type':'inner'},{'phone':'79107567265','expire':'3001-01-01 00:00:00','type':'inner'},{'phone':'79203409810','expire':'3001-01-01 00:00:00','type':'inner'},{'phone':'79227063593','expire':'3001-01-01 00:00:00','type':'inner'},{'phone':'79220144401','expire':'3001-01-01 00:00:00','type':'inner'},{'phone':'79114688286','expire':'3001-01-01 00:00:00','type':'inner'},{'phone':'79661840298','expire':'3001-01-01 00:00:00','type':'inner'},{'phone':'79641340000','expire':'3001-01-01 00:00:00','type':'owner'},{'phone':'79275807272','expire':'3001-01-01 00:00:00','type':'inner'},{'phone':'79107567249','expire':'3001-01-01 00:00:00','type':'inner'}]},{'hasPlog':'t','services':['cctv','domophone'],'houseId':'6694','flatId':'307','flatNumber':'70','flatOwner':'f','address':'Тамбов, ул. Пионерская, дом 5\'б\', кв 70','hasGates':'t'}]}
     return jsonify(response)
 
 @app.route('/api/address/intercom', methods=['POST'])
 def address_intercom():
     global response
-    if not request.headers:
-        response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
-        abort (422)
-    if not request.headers.get('Authorization'):
-        response = {'code':422,'name':'Отсутствует токен авторизации','message':'Отсутствует токен авторизации'}
-        abort (422)
-    if not db.session.query(db.session.query(Users).filter_by(uuid=request.headers.get('Authorization')[7:]).exists()).scalar():
-        response = {'code':401,'name':'Не авторизован','message':'Не авторизован'}
-        abort (401)
+    access_verification(request.headers)
     if not request.get_json():
         response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
         abort (422)
@@ -149,15 +127,7 @@ def address_intercom():
 @app.route('/api/address/offices', methods=['POST'])
 def address_offices():
     global response
-    if not request.headers:
-        response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
-        abort (422)
-    if not request.headers.get('Authorization'):
-        response = {'code':422,'name':'Отсутствует токен авторизации','message':'Отсутствует токен авторизации'}
-        abort (422)
-    if not db.session.query(db.session.query(Users).filter_by(uuid=request.headers.get('Authorization')[7:]).exists()).scalar():
-        response = {'code':401,'name':'Не авторизован','message':'Не авторизован'}
-        abort (401)
+    access_verification(request.headers)
     if not request.get_json():
         response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
         abort (422)
@@ -168,15 +138,7 @@ def address_offices():
 @app.route('/api/address/openDoor', methods=['POST'])
 def address_openDoor():
     global response
-    if not request.headers:
-        response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
-        abort (422)
-    if not request.headers.get('Authorization'):
-        response = {'code':422,'name':'Отсутствует токен авторизации','message':'Отсутствует токен авторизации'}
-        abort (422)
-    if not db.session.query(db.session.query(Users).filter_by(uuid=request.headers.get('Authorization')[7:]).exists()).scalar():
-        response = {'code':401,'name':'Не авторизован','message':'Не авторизован'}
-        abort (401)
+    access_verification(request.headers)
     if not request.get_json():
         response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
         abort (422)
@@ -185,20 +147,13 @@ def address_openDoor():
         response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
         abort (422)
     domophoneId = request_data['domophoneId']
-    return ""
+    response = app.response_class(status=204, mimetype='application/json')
+    return response
 
 @app.route('/api/address/plog', methods=['POST'])
 def address_plog():
     global response
-    if not request.headers:
-        response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
-        abort (422)
-    if not request.headers.get('Authorization'):
-        response = {'code':422,'name':'Отсутствует токен авторизации','message':'Отсутствует токен авторизации'}
-        abort (422)
-    if not db.session.query(db.session.query(Users).filter_by(uuid=request.headers.get('Authorization')[7:]).exists()).scalar():
-        response = {'code':401,'name':'Не авторизован','message':'Не авторизован'}
-        abort (401)
+    access_verification(request.headers)
     if not request.get_json():
         response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
         abort (422)
@@ -213,15 +168,7 @@ def address_plog():
 @app.route('/api/address/plogDays', methods=['POST'])
 def address_plogDays():
     global response
-    if not request.headers:
-        response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
-        abort (422)
-    if not request.headers.get('Authorization'):
-        response = {'code':422,'name':'Отсутствует токен авторизации','message':'Отсутствует токен авторизации'}
-        abort (422)
-    if not db.session.query(db.session.query(Users).filter_by(uuid=request.headers.get('Authorization')[7:]).exists()).scalar():
-        response = {'code':401,'name':'Не авторизован','message':'Не авторизован'}
-        abort (401)
+    access_verification(request.headers)
     if not request.get_json():
         response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
         abort (422)
@@ -236,15 +183,7 @@ def address_plogDays():
 @app.route('/api/address/registerQR', methods=['POST'])
 def address_registerQR():
     global response
-    if not request.headers:
-        response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
-        abort (422)
-    if not request.headers.get('Authorization'):
-        response = {'code':422,'name':'Отсутствует токен авторизации','message':'Отсутствует токен авторизации'}
-        abort (422)
-    if not db.session.query(db.session.query(Users).filter_by(uuid=request.headers.get('Authorization')[7:]).exists()).scalar():
-        response = {'code':401,'name':'Не авторизован','message':'Не авторизован'}
-        abort (401)
+    access_verification(request.headers)
     if not request.get_json():
         response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
         abort (422)
@@ -270,15 +209,7 @@ def address_registerQR():
 @app.route('/api/address/resend', methods=['POST'])
 def address_resend():
     global response
-    if not request.headers:
-        response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
-        abort (422)
-    if not request.headers.get('Authorization'):
-        response = {'code':422,'name':'Отсутствует токен авторизации','message':'Отсутствует токен авторизации'}
-        abort (422)
-    if not db.session.query(db.session.query(Users).filter_by(uuid=request.headers.get('Authorization')[7:]).exists()).scalar():
-        response = {'code':401,'name':'Не авторизован','message':'Не авторизован'}
-        abort (401)
+    access_verification(request.headers)
     if not request.get_json():
         response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
         abort (422)
@@ -288,15 +219,7 @@ def address_resend():
 @app.route('/api/address/resetCode', methods=['POST'])
 def address_resetCode():
     global response
-    if not request.headers:
-        response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
-        abort (422)
-    if not request.headers.get('Authorization'):
-        response = {'code':422,'name':'Отсутствует токен авторизации','message':'Отсутствует токен авторизации'}
-        abort (422)
-    if not db.session.query(db.session.query(Users).filter_by(uuid=request.headers.get('Authorization')[7:]).exists()).scalar():
-        response = {'code':401,'name':'Не авторизован','message':'Не авторизован'}
-        abort (401)
+    access_verification(request.headers)
     if not request.get_json():
         response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
         abort (422)
@@ -306,15 +229,7 @@ def address_resetCode():
 @app.route('/api/cctv/all', methods=['POST'])
 def cctv_all():
     global response
-    if not request.headers:
-        response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
-        abort (422)
-    if not request.headers.get('Authorization'):
-        response = {'code':422,'name':'Отсутствует токен авторизации','message':'Отсутствует токен авторизации'}
-        abort (422)
-    if not db.session.query(db.session.query(Users).filter_by(uuid=request.headers.get('Authorization')[7:]).exists()).scalar():
-        response = {'code':401,'name':'Не авторизован','message':'Не авторизован'}
-        abort (401)
+    access_verification(request.headers)
     if not request.get_json():
         response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
         abort (422)
@@ -324,33 +239,18 @@ def cctv_all():
 @app.route('/api/cctv/camMap', methods=['POST'])
 def cctv_camMap():
     global response
-    if not request.headers:
-        response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
-        abort (422)
-    if not request.headers.get('Authorization'):
-        response = {'code':422,'name':'Отсутствует токен авторизации','message':'Отсутствует токен авторизации'}
-        abort (422)
-    if not db.session.query(db.session.query(Users).filter_by(uuid=request.headers.get('Authorization')[7:]).exists()).scalar():
-        response = {'code':401,'name':'Не авторизован','message':'Не авторизован'}
-        abort (401)
-    if not request.get_json():
-        response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
-        abort (422)
-    request_data = request.get_json()
-    return "Hello, World!"
+    access_verification(request.headers)
+#    if not request.get_json():
+#        response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
+#        abort (422)
+#    request_data = request.get_json()
+    response = {'code':200,'name':'OK','message':'Хорошо','data':[{'id':'70','url':'https:\/\/fl2.lanta.me:8443\/91052','token':'acd0c17657395ff3f69d68e74907bb3a','frs':'t'},{'id':'75','url':'https:\/\/fl2.lanta.me:8443\/91078','token':'acd0c17657395ff3f69d68e74907bb3a','frs':'t'},{'id':'79','url':'https:\/\/fl2.lanta.me:8443\/91072','token':'acd0c17657395ff3f69d68e74907bb3a','frs':'t'},{'id':'124','url':'https:\/\/fl2.lanta.me:8443\/95594','token':'acd0c17657395ff3f69d68e74907bb3a','frs':'t'},{'id':'131','url':'https:\/\/fl2.lanta.me:8443\/91174','token':'acd0c17657395ff3f69d68e74907bb3a','frs':'f'},{'id':'343','url':'https:\/\/fl2.lanta.me:8443\/90753','token':'acd0c17657395ff3f69d68e74907bb3a','frs':'t'}]}
+    return jsonify(response)
 
 @app.route('/api/cctv/overview', methods=['POST'])
 def cctv_overview():
     global response
-    if not request.headers:
-        response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
-        abort (422)
-    if not request.headers.get('Authorization'):
-        response = {'code':422,'name':'Отсутствует токен авторизации','message':'Отсутствует токен авторизации'}
-        abort (422)
-    if not db.session.query(db.session.query(Users).filter_by(uuid=request.headers.get('Authorization')[7:]).exists()).scalar():
-        response = {'code':401,'name':'Не авторизован','message':'Не авторизован'}
-        abort (401)
+    access_verification(request.headers)
     if not request.get_json():
         response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
         abort (422)
@@ -360,15 +260,7 @@ def cctv_overview():
 @app.route('/api/cctv/recDownload', methods=['POST'])
 def cctv_recDownload():
     global response
-    if not request.headers:
-        response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
-        abort (422)
-    if not request.headers.get('Authorization'):
-        response = {'code':422,'name':'Отсутствует токен авторизации','message':'Отсутствует токен авторизации'}
-        abort (422)
-    if not db.session.query(db.session.query(Users).filter_by(uuid=request.headers.get('Authorization')[7:]).exists()).scalar():
-        response = {'code':401,'name':'Не авторизован','message':'Не авторизован'}
-        abort (401)
+    access_verification(request.headers)
     if not request.get_json():
         response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
         abort (422)
@@ -378,15 +270,7 @@ def cctv_recDownload():
 @app.route('/api/cctv/recPrepare', methods=['POST'])
 def cctv_recPrepare():
     global response
-    if not request.headers:
-        response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
-        abort (422)
-    if not request.headers.get('Authorization'):
-        response = {'code':422,'name':'Отсутствует токен авторизации','message':'Отсутствует токен авторизации'}
-        abort (422)
-    if not db.session.query(db.session.query(Users).filter_by(uuid=request.headers.get('Authorization')[7:]).exists()).scalar():
-        response = {'code':401,'name':'Не авторизован','message':'Не авторизован'}
-        abort (401)
+    access_verification(request.headers)
     if not request.get_json():
         response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
         abort (422)
@@ -396,15 +280,7 @@ def cctv_recPrepare():
 @app.route('/api/cctv/youtube', methods=['POST'])
 def cctv_youtube():
     global response
-    if not request.headers:
-        response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
-        abort (422)
-    if not request.headers.get('Authorization'):
-        response = {'code':422,'name':'Отсутствует токен авторизации','message':'Отсутствует токен авторизации'}
-        abort (422)
-    if not db.session.query(db.session.query(Users).filter_by(uuid=request.headers.get('Authorization')[7:]).exists()).scalar():
-        response = {'code':401,'name':'Не авторизован','message':'Не авторизован'}
-        abort (401)
+    access_verification(request.headers)
     if not request.get_json():
         response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
         abort (422)
@@ -414,15 +290,7 @@ def cctv_youtube():
 @app.route('/api/ext/ext', methods=['POST'])
 def ext_ext():
     global response
-    if not request.headers:
-        response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
-        abort (422)
-    if not request.headers.get('Authorization'):
-        response = {'code':422,'name':'Отсутствует токен авторизации','message':'Отсутствует токен авторизации'}
-        abort (422)
-    if not db.session.query(db.session.query(Users).filter_by(uuid=request.headers.get('Authorization')[7:]).exists()).scalar():
-        response = {'code':401,'name':'Не авторизован','message':'Не авторизован'}
-        abort (401)
+    access_verification(request.headers)
     if not request.get_json():
         response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
         abort (422)
@@ -432,15 +300,7 @@ def ext_ext():
 @app.route('/api/ext/list', methods=['POST'])
 def ext_list():
     global response
-    if not request.headers:
-        response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
-        abort (422)
-    if not request.headers.get('Authorization'):
-        response = {'code':422,'name':'Отсутствует токен авторизации','message':'Отсутствует токен авторизации'}
-        abort (422)
-    if not db.session.query(db.session.query(Users).filter_by(uuid=request.headers.get('Authorization')[7:]).exists()).scalar():
-        response = {'code':401,'name':'Не авторизован','message':'Не авторизован'}
-        abort (401)
+    access_verification(request.headers)
     if not request.get_json():
         response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
         abort (422)
@@ -450,15 +310,7 @@ def ext_list():
 @app.route('/api/frs/disLike', methods=['POST'])
 def frs_disLike():
     global response
-    if not request.headers:
-        response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
-        abort (422)
-    if not request.headers.get('Authorization'):
-        response = {'code':422,'name':'Отсутствует токен авторизации','message':'Отсутствует токен авторизации'}
-        abort (422)
-    if not db.session.query(db.session.query(Users).filter_by(uuid=request.headers.get('Authorization')[7:]).exists()).scalar():
-        response = {'code':401,'name':'Не авторизован','message':'Не авторизован'}
-        abort (401)
+    access_verification(request.headers)
     if not request.get_json():
         response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
         abort (422)
@@ -468,15 +320,7 @@ def frs_disLike():
 @app.route('/api/frs/like', methods=['POST'])
 def frs_like():
     global response
-    if not request.headers:
-        response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
-        abort (422)
-    if not request.headers.get('Authorization'):
-        response = {'code':422,'name':'Отсутствует токен авторизации','message':'Отсутствует токен авторизации'}
-        abort (422)
-    if not db.session.query(db.session.query(Users).filter_by(uuid=request.headers.get('Authorization')[7:]).exists()).scalar():
-        response = {'code':401,'name':'Не авторизован','message':'Не авторизован'}
-        abort (401)
+    access_verification(request.headers)
     if not request.get_json():
         response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
         abort (422)
@@ -486,15 +330,7 @@ def frs_like():
 @app.route('/api/frs/listFaces', methods=['POST'])
 def frs_listFaces():
     global response
-    if not request.headers:
-        response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
-        abort (422)
-    if not request.headers.get('Authorization'):
-        response = {'code':422,'name':'Отсутствует токен авторизации','message':'Отсутствует токен авторизации'}
-        abort (422)
-    if not db.session.query(db.session.query(Users).filter_by(uuid=request.headers.get('Authorization')[7:]).exists()).scalar():
-        response = {'code':401,'name':'Не авторизован','message':'Не авторизован'}
-        abort (401)
+    access_verification(request.headers)
     if not request.get_json():
         response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
         abort (422)
@@ -504,15 +340,7 @@ def frs_listFaces():
 @app.route('/api/geo/address', methods=['POST'])
 def geo_address():
     global response
-    if not request.headers:
-        response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
-        abort (422)
-    if not request.headers.get('Authorization'):
-        response = {'code':422,'name':'Отсутствует токен авторизации','message':'Отсутствует токен авторизации'}
-        abort (422)
-    if not db.session.query(db.session.query(Users).filter_by(uuid=request.headers.get('Authorization')[7:]).exists()).scalar():
-        response = {'code':401,'name':'Не авторизован','message':'Не авторизован'}
-        abort (401)
+    access_verification(request.headers)
     if not request.get_json():
         response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
         abort (422)
@@ -522,15 +350,7 @@ def geo_address():
 @app.route('/api/geo/coder', methods=['POST'])
 def geo_coder():
     global response
-    if not request.headers:
-        response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
-        abort (422)
-    if not request.headers.get('Authorization'):
-        response = {'code':422,'name':'Отсутствует токен авторизации','message':'Отсутствует токен авторизации'}
-        abort (422)
-    if not db.session.query(db.session.query(Users).filter_by(uuid=request.headers.get('Authorization')[7:]).exists()).scalar():
-        response = {'code':401,'name':'Не авторизован','message':'Не авторизован'}
-        abort (401)
+    access_verification(request.headers)
     if not request.get_json():
         response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
         abort (422)
@@ -540,15 +360,7 @@ def geo_coder():
 @app.route('/api/geo/getAllLocations', methods=['POST'])
 def geo_getAllLocations():
     global response
-    if not request.headers:
-        response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
-        abort (422)
-    if not request.headers.get('Authorization'):
-        response = {'code':422,'name':'Отсутствует токен авторизации','message':'Отсутствует токен авторизации'}
-        abort (422)
-    if not db.session.query(db.session.query(Users).filter_by(uuid=request.headers.get('Authorization')[7:]).exists()).scalar():
-        response = {'code':401,'name':'Не авторизован','message':'Не авторизован'}
-        abort (401)
+    access_verification(request.headers)
     if not request.get_json():
         response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
         abort (422)
@@ -558,15 +370,7 @@ def geo_getAllLocations():
 @app.route('/api/geo/getAllServices', methods=['POST'])
 def geo_getAllServices():
     global response
-    if not request.headers:
-        response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
-        abort (422)
-    if not request.headers.get('Authorization'):
-        response = {'code':422,'name':'Отсутствует токен авторизации','message':'Отсутствует токен авторизации'}
-        abort (422)
-    if not db.session.query(db.session.query(Users).filter_by(uuid=request.headers.get('Authorization')[7:]).exists()).scalar():
-        response = {'code':401,'name':'Не авторизован','message':'Не авторизован'}
-        abort (401)
+    access_verification(request.headers)
     if not request.get_json():
         response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
         abort (422)
@@ -576,15 +380,7 @@ def geo_getAllServices():
 @app.route('/api/geo/getHouses', methods=['POST'])
 def geo_getHouses():
     global response
-    if not request.headers:
-        response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
-        abort (422)
-    if not request.headers.get('Authorization'):
-        response = {'code':422,'name':'Отсутствует токен авторизации','message':'Отсутствует токен авторизации'}
-        abort (422)
-    if not db.session.query(db.session.query(Users).filter_by(uuid=request.headers.get('Authorization')[7:]).exists()).scalar():
-        response = {'code':401,'name':'Не авторизован','message':'Не авторизован'}
-        abort (401)
+    access_verification(request.headers)
     if not request.get_json():
         response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
         abort (422)
@@ -594,15 +390,7 @@ def geo_getHouses():
 @app.route('/api/geo/getServices', methods=['POST'])
 def geo_getServices():
     global response
-    if not request.headers:
-        response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
-        abort (422)
-    if not request.headers.get('Authorization'):
-        response = {'code':422,'name':'Отсутствует токен авторизации','message':'Отсутствует токен авторизации'}
-        abort (422)
-    if not db.session.query(db.session.query(Users).filter_by(uuid=request.headers.get('Authorization')[7:]).exists()).scalar():
-        response = {'code':401,'name':'Не авторизован','message':'Не авторизован'}
-        abort (401)
+    access_verification(request.headers)
     if not request.get_json():
         response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
         abort (422)
@@ -612,15 +400,7 @@ def geo_getServices():
 @app.route('/api/geo/getStreets', methods=['POST'])
 def geo_getStreets():
     global response
-    if not request.headers:
-        response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
-        abort (422)
-    if not request.headers.get('Authorization'):
-        response = {'code':422,'name':'Отсутствует токен авторизации','message':'Отсутствует токен авторизации'}
-        abort (422)
-    if not db.session.query(db.session.query(Users).filter_by(uuid=request.headers.get('Authorization')[7:]).exists()).scalar():
-        response = {'code':401,'name':'Не авторизован','message':'Не авторизован'}
-        abort (401)
+    access_verification(request.headers)
     if not request.get_json():
         response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
         abort (422)
@@ -630,15 +410,7 @@ def geo_getStreets():
 @app.route('/api/inbox/alert', methods=['POST'])
 def inbox_alert():
     global response
-    if not request.headers:
-        response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
-        abort (422)
-    if not request.headers.get('Authorization'):
-        response = {'code':422,'name':'Отсутствует токен авторизации','message':'Отсутствует токен авторизации'}
-        abort (422)
-    if not db.session.query(db.session.query(Users).filter_by(uuid=request.headers.get('Authorization')[7:]).exists()).scalar():
-        response = {'code':401,'name':'Не авторизован','message':'Не авторизован'}
-        abort (401)
+    access_verification(request.headers)
     if not request.get_json():
         response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
         abort (422)
@@ -648,15 +420,7 @@ def inbox_alert():
 @app.route('/api/inbox/chatReaded', methods=['POST'])
 def inbox_chatReaded():
     global response
-    if not request.headers:
-        response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
-        abort (422)
-    if not request.headers.get('Authorization'):
-        response = {'code':422,'name':'Отсутствует токен авторизации','message':'Отсутствует токен авторизации'}
-        abort (422)
-    if not db.session.query(db.session.query(Users).filter_by(uuid=request.headers.get('Authorization')[7:]).exists()).scalar():
-        response = {'code':401,'name':'Не авторизован','message':'Не авторизован'}
-        abort (401)
+    access_verification(request.headers)
     if not request.get_json():
         response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
         abort (422)
@@ -666,15 +430,7 @@ def inbox_chatReaded():
 @app.route('/api/inbox/delivered', methods=['POST'])
 def inbox_delivered():
     global response
-    if not request.headers:
-        response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
-        abort (422)
-    if not request.headers.get('Authorization'):
-        response = {'code':422,'name':'Отсутствует токен авторизации','message':'Отсутствует токен авторизации'}
-        abort (422)
-    if not db.session.query(db.session.query(Users).filter_by(uuid=request.headers.get('Authorization')[7:]).exists()).scalar():
-        response = {'code':401,'name':'Не авторизован','message':'Не авторизован'}
-        abort (401)
+    access_verification(request.headers)
     if not request.get_json():
         response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
         abort (422)
@@ -684,15 +440,7 @@ def inbox_delivered():
 @app.route('/api/inbox/inbox', methods=['POST'])
 def inbox_inbox():
     global response
-    if not request.headers:
-        response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
-        abort (422)
-    if not request.headers.get('Authorization'):
-        response = {'code':422,'name':'Отсутствует токен авторизации','message':'Отсутствует токен авторизации'}
-        abort (422)
-    if not db.session.query(db.session.query(Users).filter_by(uuid=request.headers.get('Authorization')[7:]).exists()).scalar():
-        response = {'code':401,'name':'Не авторизован','message':'Не авторизован'}
-        abort (401)
+    access_verification(request.headers)
     if not request.get_json():
         response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
         abort (422)
@@ -702,15 +450,7 @@ def inbox_inbox():
 @app.route('/api/inbox/readed', methods=['POST'])
 def inbox_readed():
     global response
-    if not request.headers:
-        response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
-        abort (422)
-    if not request.headers.get('Authorization'):
-        response = {'code':422,'name':'Отсутствует токен авторизации','message':'Отсутствует токен авторизации'}
-        abort (422)
-    if not db.session.query(db.session.query(Users).filter_by(uuid=request.headers.get('Authorization')[7:]).exists()).scalar():
-        response = {'code':401,'name':'Не авторизован','message':'Не авторизован'}
-        abort (401)
+    access_verification(request.headers)
     if not request.get_json():
         response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
         abort (422)
@@ -720,33 +460,19 @@ def inbox_readed():
 @app.route('/api/inbox/unreaded', methods=['POST'])
 def inbox_unreaded():
     global response
-    if not request.headers:
-        response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
-        abort (422)
-    if not request.headers.get('Authorization'):
-        response = {'code':422,'name':'Отсутствует токен авторизации','message':'Отсутствует токен авторизации'}
-        abort (422)
-    if not db.session.query(db.session.query(Users).filter_by(uuid=request.headers.get('Authorization')[7:]).exists()).scalar():
-        response = {'code':401,'name':'Не авторизован','message':'Не авторизован'}
-        abort (401)
-    if not request.get_json():
-        response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
-        abort (422)
-    request_data = request.get_json()
-    return "Hello, World!"
+    access_verification(request.headers)
+#    if not request.get_json():
+#        response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
+#        abort (422)
+#    request_data = request.get_json()
+    response = {'code':200,'name':'OK','message':'Хорошо','data':{'count':0,'chat':0}}
+    return jsonify(response)
+
 
 @app.route('/api/issues/action', methods=['POST'])
 def issues_action():
     global response
-    if not request.headers:
-        response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
-        abort (422)
-    if not request.headers.get('Authorization'):
-        response = {'code':422,'name':'Отсутствует токен авторизации','message':'Отсутствует токен авторизации'}
-        abort (422)
-    if not db.session.query(db.session.query(Users).filter_by(uuid=request.headers.get('Authorization')[7:]).exists()).scalar():
-        response = {'code':401,'name':'Не авторизован','message':'Не авторизован'}
-        abort (401)
+    access_verification(request.headers)
     if not request.get_json():
         response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
         abort (422)
@@ -756,15 +482,7 @@ def issues_action():
 @app.route('/api/issues/comment', methods=['POST'])
 def issues_comment():
     global response
-    if not request.headers:
-        response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
-        abort (422)
-    if not request.headers.get('Authorization'):
-        response = {'code':422,'name':'Отсутствует токен авторизации','message':'Отсутствует токен авторизации'}
-        abort (422)
-    if not db.session.query(db.session.query(Users).filter_by(uuid=request.headers.get('Authorization')[7:]).exists()).scalar():
-        response = {'code':401,'name':'Не авторизован','message':'Не авторизован'}
-        abort (401)
+    access_verification(request.headers)
     if not request.get_json():
         response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
         abort (422)
@@ -774,15 +492,7 @@ def issues_comment():
 @app.route('/api/issues/create', methods=['POST'])
 def issues_create():
     global response
-    if not request.headers:
-        response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
-        abort (422)
-    if not request.headers.get('Authorization'):
-        response = {'code':422,'name':'Отсутствует токен авторизации','message':'Отсутствует токен авторизации'}
-        abort (422)
-    if not db.session.query(db.session.query(Users).filter_by(uuid=request.headers.get('Authorization')[7:]).exists()).scalar():
-        response = {'code':401,'name':'Не авторизован','message':'Не авторизован'}
-        abort (401)
+    access_verification(request.headers)
     if not request.get_json():
         response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
         abort (422)
@@ -792,33 +502,18 @@ def issues_create():
 @app.route('/api/issues/listConnect', methods=['POST'])
 def issues_listConnect():
     global response
-    if not request.headers:
-        response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
-        abort (422)
-    if not request.headers.get('Authorization'):
-        response = {'code':422,'name':'Отсутствует токен авторизации','message':'Отсутствует токен авторизации'}
-        abort (422)
-    if not db.session.query(db.session.query(Users).filter_by(uuid=request.headers.get('Authorization')[7:]).exists()).scalar():
-        response = {'code':401,'name':'Не авторизован','message':'Не авторизован'}
-        abort (401)
-    if not request.get_json():
-        response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
-        abort (422)
-    request_data = request.get_json()
-    return "Hello, World!"
+    access_verification(request.headers)
+#    if not request.get_json():
+#        response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
+#        abort (422)
+#    request_data = request.get_json()
+    response = app.response_class(status=204, mimetype='application/json')
+    return response
 
 @app.route('/api/pay/prepare', methods=['POST'])
 def pay_prepare():
     global response
-    if not request.headers:
-        response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
-        abort (422)
-    if not request.headers.get('Authorization'):
-        response = {'code':422,'name':'Отсутствует токен авторизации','message':'Отсутствует токен авторизации'}
-        abort (422)
-    if not db.session.query(db.session.query(Users).filter_by(uuid=request.headers.get('Authorization')[7:]).exists()).scalar():
-        response = {'code':401,'name':'Не авторизован','message':'Не авторизован'}
-        abort (401)
+    access_verification(request.headers)
     if not request.get_json():
         response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
         abort (422)
@@ -828,15 +523,7 @@ def pay_prepare():
 @app.route('/api/pay/process', methods=['POST'])
 def pay_process():
     global response
-    if not request.headers:
-        response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
-        abort (422)
-    if not request.headers.get('Authorization'):
-        response = {'code':422,'name':'Отсутствует токен авторизации','message':'Отсутствует токен авторизации'}
-        abort (422)
-    if not db.session.query(db.session.query(Users).filter_by(uuid=request.headers.get('Authorization')[7:]).exists()).scalar():
-        response = {'code':401,'name':'Не авторизован','message':'Не авторизован'}
-        abort (401)
+    access_verification(request.headers)
     if not request.get_json():
         response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
         abort (422)
@@ -846,15 +533,7 @@ def pay_process():
 @app.route('/api/sip/helpMe', methods=['POST'])
 def sip_helpMe():
     global response
-    if not request.headers:
-        response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
-        abort (422)
-    if not request.headers.get('Authorization'):
-        response = {'code':422,'name':'Отсутствует токен авторизации','message':'Отсутствует токен авторизации'}
-        abort (422)
-    if not db.session.query(db.session.query(Users).filter_by(uuid=request.headers.get('Authorization')[7:]).exists()).scalar():
-        response = {'code':401,'name':'Не авторизован','message':'Не авторизован'}
-        abort (401)
+    access_verification(request.headers)
     if not request.get_json():
         response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
         abort (422)
@@ -864,15 +543,7 @@ def sip_helpMe():
 @app.route('/api/user/addMyPhone', methods=['POST'])
 def user_addMyPhone():
     global response
-    if not request.headers:
-        response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
-        abort (422)
-    if not request.headers.get('Authorization'):
-        response = {'code':422,'name':'Отсутствует токен авторизации','message':'Отсутствует токен авторизации'}
-        abort (422)
-    if not db.session.query(db.session.query(Users).filter_by(uuid=request.headers.get('Authorization')[7:]).exists()).scalar():
-        response = {'code':401,'name':'Не авторизован','message':'Не авторизован'}
-        abort (401)
+    access_verification(request.headers)
     if not request.get_json():
         response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
         abort (422)
@@ -886,20 +557,13 @@ def user_addMyPhone():
         comment = request_data['comment']
     if 'notification' in request_data:
         notification = request_data['notification']
-    return ""
+    response = app.response_class(status=204, mimetype='application/json')
+    return response
 
 @app.route('/api/user/appVersion', methods=['POST'])
 def user_appVersion():
     global response
-    if not request.headers:
-        response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
-        abort (422)
-    if not request.headers.get('Authorization'):
-        response = {'code':422,'name':'Отсутствует токен авторизации','message':'Отсутствует токен авторизации'}
-        abort (422)
-    if not db.session.query(db.session.query(Users).filter_by(uuid=request.headers.get('Authorization')[7:]).exists()).scalar():
-        response = {'code':401,'name':'Не авторизован','message':'Не авторизован'}
-        abort (401)
+    access_verification(request.headers)
     if not request.get_json():
         response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
         abort (422)
@@ -952,87 +616,52 @@ def user_confirmCode():
 @app.route('/api/user/getPaymentsList', methods=['POST'])
 def user_getPaymentsList():
     global response
-    if not request.headers:
-        response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
-        abort (422)
-    if not request.headers.get('Authorization'):
-        response = {'code':422,'name':'Отсутствует токен авторизации','message':'Отсутствует токен авторизации'}
-        abort (422)
-    if not db.session.query(db.session.query(Users).filter_by(uuid=request.headers.get('Authorization')[7:]).exists()).scalar():
-        response = {'code':401,'name':'Не авторизован','message':'Не авторизован'}
-        abort (401)
+    access_verification(request.headers)
     response = {'code':200,'name':'OK','message':'Хорошо','data':[{'houseId':'19260','flatId':'136151','address':'Тамбов, ул. Верховая, дом 17, кв 1','accounts':[{'clientId':'91052','clientName':'Бивард-00011 (Чемодан 2)','contractName':'ФЛ-85973\/20','blocked':'f','balance':0,'bonus':0,'contractPayName':'85973','lcab':'https:\/\/lc.lanta.me\/?auth=Zjg1OTczOmY5NzkzNTQzM2U5YmQ5ZThkYTJiZmU2MWMwNDlkZGMy','lcabPay':'https:\/\/lc.lanta.me\/?auth=Zjg1OTczOmY5NzkzNTQzM2U5YmQ5ZThkYTJiZmU2MWMwNDlkZGMy','services':['internet','cctv','domophone']}]}]}
     return jsonify(response)
 
 @app.route('/api/user/notification', methods=['POST'])
 def user_notification():
     global response
-    if not request.headers:
-        response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
-        abort (422)
-    if not request.headers.get('Authorization'):
-        response = {'code':422,'name':'Отсутствует токен авторизации','message':'Отсутствует токен авторизации'}
-        abort (422)
-    if not db.session.query(db.session.query(Users).filter_by(uuid=request.headers.get('Authorization')[7:]).exists()).scalar():
-        response = {'code':401,'name':'Не авторизован','message':'Не авторизован'}
-        abort (401)
-    if not request.get_json():
-        response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
-        abort (422)
-    request_data = request.get_json()
-    if not 'money' in request_data and not 'enable' in request_data:
-        response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
-        abort (422)
-    money = request_data['money']
-    enable = request_data['enable']
-    if (money == 't' or money == 'f') and (enable == 't' or enable == 'f'):
-        response = {'code':200,'name':'OK','message':'Хорошо','data':{'money':money,'enable':enable}}
-        return jsonify(response)
-    else:
-        response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
-        abort (422)
+    access_verification(request.headers)
+#    if not request.get_json():
+#        response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
+#        abort (422)
+#    request_data = request.get_json()
+#    if not 'money' in request_data and not 'enable' in request_data:
+#        response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
+#        abort (422)
+#    money = request_data['money']
+#    enable = request_data['enable']
+#    if (money == 't' or money == 'f') and (enable == 't' or enable == 'f'):
+#        response = {'code':200,'name':'OK','message':'Хорошо','data':{'money':money,'enable':enable}}
+#        return jsonify(response)
+#    else:
+#        response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
+#        abort (422)
+    money = 't'
+    enable = 't'
+    response = {'code':200,'name':'OK','message':'Хорошо','data':{'money':money,'enable':enable}}
+    return jsonify(response)
 
 @app.route('/api/user/ping', methods=['POST'])
 def user_ping():
     global response
-    if not request.headers:
-        response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
-        abort (422)
-    if not request.headers.get('Authorization'):
-        response = {'code':422,'name':'Отсутствует токен авторизации','message':'Отсутствует токен авторизации'}
-        abort (422)
-    if not db.session.query(db.session.query(Users).filter_by(uuid=request.headers.get('Authorization')[7:]).exists()).scalar():
-        response = {'code':401,'name':'Не авторизован','message':'Не авторизован'}
-        abort (401)
-    return ""
+    access_verification(request.headers)
+    response = app.response_class(status=204, mimetype='application/json')
+    return response
 
 @app.route('/api/user/pushTokens', methods=['POST'])
 def user_pushTokens():
     global response
-    if not request.headers:
-        response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
-        abort (422)
-    if not request.headers.get('Authorization'):
-        response = {'code':422,'name':'Отсутствует токен авторизации','message':'Отсутствует токен авторизации'}
-        abort (422)
-    if not db.session.query(db.session.query(Users).filter_by(uuid=request.headers.get('Authorization')[7:]).exists()).scalar():
-        response = {'code':401,'name':'Не авторизован','message':'Не авторизован'}
-        abort (401)
+    access_verification(request.headers)
     response = {'code':200,'name':'OK','message':'Хорошо','data':{'pushToken':'fnTGJUfJTIC61WfSKWHP_N:APA91bGbnS3ck-cEWO0aj4kExZLsmGGmhziTu2lfyvjIpbmia5ahfL4WlJrr8DOjcDMUo517HUjxH4yZm0m5tF89CssdSsmO6IjcrS1U_YM3ue2187rc9ow9rS0xL8Q48vwz2e6j42l1','voipToken':'off'}}
     return jsonify(response)
 
 @app.route('/api/user/registerPushToken', methods=['POST'])
 def user_registerPushToken():
     global response
-    if not request.headers:
-        response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
-        abort (422)
-    if not request.headers.get('Authorization'):
-        response = {'code':422,'name':'Отсутствует токен авторизации','message':'Отсутствует токен авторизации'}
-        abort (422)
-    if not db.session.query(db.session.query(Users).filter_by(uuid=request.headers.get('Authorization')[7:]).exists()).scalar():
-        response = {'code':401,'name':'Не авторизован','message':'Не авторизован'}
-        abort (401)
+    access_verification(request.headers)
     if not request.get_json():
         response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
         abort (422)
@@ -1047,7 +676,8 @@ def user_registerPushToken():
         voipToken = request_data['voipToken']
     if 'production' in request_data:
         production = request_data['production']
-    return ""
+    response = app.response_class(status=204, mimetype='application/json')
+    return response
 
 @app.route('/api/user/requestCode', methods=['POST'])
 def user_requestCode():
@@ -1062,20 +692,13 @@ def user_requestCode():
     temp_user = Temps(userphone = int(request_data['userPhone']), smscode = int(str(randint(0, 9)) + str(randint(0, 9)) + str(randint(0, 9)) + str(randint(0, 9))))
     db.session.add(temp_user)
     db.session.commit()
-    return ''
+    response = app.response_class(status=204, mimetype='application/json')
+    return response
 
 @app.route('/api/user/restore', methods=['POST'])
 def user_restore():
     global response
-    if not request.headers:
-        response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
-        abort (422)
-    if not request.headers.get('Authorization'):
-        response = {'code':422,'name':'Отсутствует токен авторизации','message':'Отсутствует токен авторизации'}
-        abort (422)
-    if not db.session.query(db.session.query(Users).filter_by(uuid=request.headers.get('Authorization')[7:]).exists()).scalar():
-        response = {'code':401,'name':'Не авторизован','message':'Не авторизован'}
-        abort (401)
+    access_verification(request.headers)
     if not request.get_json():
         response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
         abort (422)
@@ -1090,12 +713,14 @@ def user_restore():
     if 'contactId' in request_data and (not 'code' in request_data):
         contactId = request_data['contactId']
         print(f"Кто-то сделал POST запрос contactId и передал {contactId}")
-        return ""
+        response = app.response_class(status=204, mimetype='application/json')
+        return response
     if (not 'contactId' in request_data) and 'code' in request_data:
         code = request_data['code']
         if code ==  code:
             print(f"Кто-то сделал POST запрос code и передал {code}")
-            return ""
+            response = app.response_class(status=204, mimetype='application/json')
+            return response
         else:
             response = {'code':403,'name':'Forbidden','message':'Запрещено'}
             abort (403)
@@ -1107,15 +732,7 @@ def user_restore():
 @app.route('/api/user/sendName', methods=['POST'])
 def user_sendName():
     global response
-    if not request.headers:
-        response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
-        abort (422)
-    if not request.headers.get('Authorization'):
-        response = {'code':422,'name':'Отсутствует токен авторизации','message':'Отсутствует токен авторизации'}
-        abort (422)
-    if not db.session.query(db.session.query(Users).filter_by(uuid=request.headers.get('Authorization')[7:]).exists()).scalar():
-        response = {'code':401,'name':'Не авторизован','message':'Не авторизован'}
-        abort (401)
+    access_verification(request.headers)
     if not request.get_json():
         response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
         abort (422)
@@ -1126,9 +743,9 @@ def user_sendName():
     name = request_data['name']
     if not 'patronymic' in request_data:
         request_data['patronymic'] = None
-    return ""
+    response = app.response_class(status=204, mimetype='application/json')
+    return response
 
-#{'code':401,'name':'Не авторизован','message':'Не авторизован'}
 @app.errorhandler(401)
 def not_found(error):
     return make_response(jsonify(response), 401)
@@ -1159,4 +776,3 @@ def not_found(error):
 
 if __name__ == '__main__':
     app.run(debug=True)
-

@@ -1,5 +1,5 @@
 #!bin/python
-import random, uuid, os, json
+import random, uuid, os, json, requests, binascii
 from random import randint
 from flask import Flask, jsonify, request, make_response, abort
 from flask_sqlalchemy import SQLAlchemy
@@ -7,6 +7,7 @@ from flask_migrate import Migrate
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import exists
 from dotenv import load_dotenv
+from requests.exceptions import HTTPError
 
 dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
 if os.path.exists(dotenv_path):
@@ -22,6 +23,9 @@ app.config['SQLALCHEMY_DATABASE_URI'] = "postgresql://" + os.getenv('PG_USER') +
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
+
+kannel_url = "http://%s:%d/cgi-bin/sendsms" % (os.getenv('KANNEL_HOST'), int(os.getenv('KANNEL_PORT')))
+kannel_params = (('user', os.getenv('KANNEL_USER')), ('pass', os.getenv('KANNEL_PASS')), ('from', os.getenv('KANNEL_FROM')), ('coding', '2'))
 
 class Temps(db.Model):
     __tablename__ = 'temps'
@@ -63,6 +67,12 @@ def access_verification(key):
     if not db.session.query(db.session.query(Users).filter_by(uuid=key.get('Authorization')[7:]).exists()).scalar():
         response = {'code':401,'name':'Не авторизован','message':'Не авторизован'}
         abort (401)
+
+def json_verification(input_json):
+    global response
+    if not input_json:
+        response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
+        abort (422)
 
 @app.route('/api/')
 def index():
@@ -689,9 +699,22 @@ def user_requestCode():
     if (not 'userPhone' in request_data) or len(request_data['userPhone'])!=11:
         response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
         abort (422)
-    temp_user = Temps(userphone = int(request_data['userPhone']), smscode = int(str(randint(0, 9)) + str(randint(0, 9)) + str(randint(0, 9)) + str(randint(0, 9))))
-    db.session.add(temp_user)
-    db.session.commit()
+    sms_code = int(str(randint(0, 9)) + str(randint(0, 9)) + str(randint(0, 9)) + str(randint(0, 9)))
+    sms_text = "ROSTELESET код подтверждения: " + str(sms_code)
+    user_phone = int(request_data['userPhone'])
+    temp_user = Temps(userphone=user_phone, smscode=sms_code)
+    #db.session.add(temp_user)
+    #db.session.commit()
+    kannel_params2 = (('to', user_phone), ('text', sms_text.encode('utf-16-be').decode('utf-8').upper()))
+    try:
+        response = requests.get(url=kannel_url, params=kannel_params + kannel_params2)
+        response.raise_for_status()
+    except HTTPError as http_err:
+        print(f'HTTP error occurred: {http_err}')
+    except Exception as err:
+        print(f'Other error occurred: {err}')
+    else:
+        print(f'Success send sms to {user_phone} and text {sms_text}!')
     response = app.response_class(status=204, mimetype='application/json')
     return response
 
@@ -745,6 +768,13 @@ def user_sendName():
         request_data['patronymic'] = None
     response = app.response_class(status=204, mimetype='application/json')
     return response
+
+@app.route('/api/address/getHcsList', methods=['POST'])
+def address_getHcsList():
+    global response
+    access_verification(request.headers)
+    response = {'code':200,'name':'OK','message':'Хорошо','data':[{'houseId':'19260','address':'Липецк, ул. Верховая, дом 17','hasPlog':'t','doors':[{'domophoneId':'343','doorId':0,'entrance':'1','icon':'entrance','name':'Подъезд'},{'domophoneId':'70','doorId':0,'entrance':'1','icon':'entrance','name':'Подъезд 1'},{'domophoneId':'124','doorId':0,'icon':'entrance','name':'Подъезд 2'}],'cctv':2},{'houseId':'6694','address':'Липецк, ул. Пионерская, дом 5\'б\'','hasPlog':'t','doors':[{'domophoneId':'79','doorId':0,'entrance':'3','icon':'entrance','name':'Подъезд'},{'domophoneId':'75','doorId':0,'icon':'wicket','name':'Калитка'},{'domophoneId':'297','doorId':0,'icon':'wicket','name':'Калитка доп'},{'domophoneId':'131','doorId':0,'icon':'gate','name':'Ворота'}],'cctv':14}]}
+    return jsonify(response)
 
 @app.errorhandler(401)
 def not_found(error):

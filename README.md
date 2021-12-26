@@ -41,9 +41,9 @@ psql
 
 CREATE DATABASE smartyard WITH OWNER "smartyard" ENCODING 'UTF8';
 
-postgres=# DROP DATABASE smartyard;
+CREATE USER smartyard WITH PASSWORD 'smartyardpass';
 
-postgres=# GRANT ALL PRIVILEGES ON DATABASE smartyard TO smartyard;
+GRANT ALL PRIVILEGES ON DATABASE smartyard TO smartyard;
 
 \q
 

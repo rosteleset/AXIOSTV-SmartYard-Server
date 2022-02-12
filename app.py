@@ -8,6 +8,7 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import exists
 from dotenv import load_dotenv
 from requests.exceptions import HTTPError
+import logging, sys
 
 dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
 if os.path.exists(dotenv_path):
@@ -26,6 +27,7 @@ migrate = Migrate(app, db)
 
 kannel_url = "http://%s:%d/cgi-bin/sendsms" % (os.getenv('KANNEL_HOST'), int(os.getenv('KANNEL_PORT')))
 kannel_params = (('user', os.getenv('KANNEL_USER')), ('pass', os.getenv('KANNEL_PASS')), ('from', os.getenv('KANNEL_FROM')), ('coding', '2'))
+billing_url=os.getenv('BILLING_URL')
 
 class Temps(db.Model):
     __tablename__ = 'temps'
@@ -67,6 +69,7 @@ def access_verification(key):
     if not db.session.query(db.session.query(Users).filter_by(uuid=key.get('Authorization')[7:]).exists()).scalar():
         response = {'code':401,'name':'Не авторизован','message':'Не авторизован'}
         abort (401)
+    return db.session.query(Users.userphone).filter_by(uuid=key.get('Authorization')[7:]).first()[0]
 
 def json_verification(input_json):
     global response
@@ -451,11 +454,12 @@ def inbox_delivered():
 def inbox_inbox():
     global response
     access_verification(request.headers)
-    if not request.get_json():
-        response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
-        abort (422)
-    request_data = request.get_json()
-    return "Hello, World!"
+    #if not request.get_json():
+    #    response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
+    #    abort (422)
+    #request_data = request.get_json()
+    response = {'code':200,'name':'OK','message':'Хорошо','data':{'count':0,'chat':0}}
+    return jsonify(response)
 
 @app.route('/api/inbox/readed', methods=['POST'])
 def inbox_readed():
@@ -523,12 +527,18 @@ def issues_listConnect():
 @app.route('/api/pay/prepare', methods=['POST'])
 def pay_prepare():
     global response
-    access_verification(request.headers)
+    phone = access_verification(request.headers)
     if not request.get_json():
         response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
         abort (422)
     request_data = request.get_json()
-    return "Hello, World!"
+    logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
+    logging.debug(repr(request_data['clientId']))
+    logging.debug(repr(request_data['amount']))
+    sub_response = requests.post(billing_url + "createinvoice", headers={'Content-Type':'application/json'}, data=json.dumps({'login': request_data['clientId'], 'amount' : request_data['amount'], 'phone' : phone})).json()
+    return jsonify(sub_response)
+    #response = {'code':200,'name':'OK','message':'Хорошо','data':'12350'}
+    #return jsonify(response)
 
 @app.route('/api/pay/process', methods=['POST'])
 def pay_process():
@@ -538,7 +548,11 @@ def pay_process():
         response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
         abort (422)
     request_data = request.get_json()
-    return "Hello, World!"
+    logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
+    logging.debug(repr(request_data['paymentId']))
+    logging.debug(repr(request_data['sbId']))
+    response = {'code':200,'name':'OK','message':'Хорошо','data':'Платеж в обработке'}
+    return jsonify(response)
 
 @app.route('/api/sip/helpMe', methods=['POST'])
 def sip_helpMe():
@@ -608,8 +622,6 @@ def user_confirmCode():
     if not db.session.query(db.exists().where(Temps.userphone==int(userPhone) and Temps.smscode == int(smsCode))).scalar():
         response = {"code":403,"name":"Пин-код введен неверно","message":"Пин-код введен неверно"}
         abort(403)
-    if db.session.query(db.session.query(Users).filter_by(userphone=int(userPhone)).exists()).scalar():
-        db.session.query(Users).filter_by(userphone=int(userPhone)).delete()
     accessToken = str(uuid.uuid4())
     if not 'name' in request_data:
         request_data['name'] = None
@@ -617,8 +629,12 @@ def user_confirmCode():
         request_data['patronymic'] = None
     if not 'email' in request_data:
         request_data['email'] = None
-    new_user = Users(uuid = accessToken, userphone = int(request_data['userPhone']), name = request_data['name'], patronymic = request_data['patronymic'], email = request_data['email'])
-    db.session.add(new_user)
+    if db.session.query(db.session.query(Users).filter_by(userphone=int(userPhone)).exists()).scalar():
+        db.session.query(Users).filter_by(userphone=int(userPhone)).update({'uuid' : accessToken})
+    else:
+        new_user = Users(uuid = accessToken, userphone = int(request_data['userPhone']), name = request_data['name'], patronymic = request_data['patronymic'], email = request_data['email'])
+        db.session.add(new_user)
+    db.session.query(Temps).filter_by(userphone=int(userPhone)).delete()
     db.session.commit()
     response = {'code':200,'name':'OK','message':'Хорошо','data':{'accessToken':accessToken,'names':{'name':request_data['name'],'patronymic':request_data['patronymic']}}}
     return jsonify(response)
@@ -626,8 +642,9 @@ def user_confirmCode():
 @app.route('/api/user/getPaymentsList', methods=['POST'])
 def user_getPaymentsList():
     global response
-    access_verification(request.headers)
-    response = {'code':200,'name':'OK','message':'Хорошо','data':[{'houseId':'19260','flatId':'136151','address':'Тамбов, ул. Верховая, дом 17, кв 1','accounts':[{'clientId':'91052','clientName':'Бивард-00011 (Чемодан 2)','contractName':'ФЛ-85973\/20','blocked':'f','balance':0,'bonus':0,'contractPayName':'85973','lcab':'https:\/\/lc.lanta.me\/?auth=Zjg1OTczOmY5NzkzNTQzM2U5YmQ5ZThkYTJiZmU2MWMwNDlkZGMy','lcabPay':'https:\/\/lc.lanta.me\/?auth=Zjg1OTczOmY5NzkzNTQzM2U5YmQ5ZThkYTJiZmU2MWMwNDlkZGMy','services':['internet','cctv','domophone']}]}]}
+    phone = access_verification(request.headers)
+    response = requests.post(billing_url + "getlist", headers={'Content-Type':'application/json'}, data=json.dumps({'phone': phone})).json()
+    #response = {'code':200,'name':'OK','message':'Хорошо','data':[{'houseId':'19260','flatId':'136151','address':'Тамбов, ул. Верховая, дом 17, кв 1','accounts':[{'clientId':'91052','clientName':'Бивард-00011 (Чемодан 2)','contractName':'ФЛ-85973\/20','blocked':'f','balance':0,'bonus':0,'contractPayName':'85973','lcab':'https:\/\/lc.lanta.me\/?auth=Zjg1OTczOmY5NzkzNTQzM2U5YmQ5ZThkYTJiZmU2MWMwNDlkZGMy','lcabPay':'https:\/\/lc.lanta.me\/?auth=Zjg1OTczOmY5NzkzNTQzM2U5YmQ5ZThkYTJiZmU2MWMwNDlkZGMy','services':['internet','cctv','domophone']}]}]}
     return jsonify(response)
 
 @app.route('/api/user/notification', methods=['POST'])
@@ -699,12 +716,13 @@ def user_requestCode():
     if (not 'userPhone' in request_data) or len(request_data['userPhone'])!=11:
         response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
         abort (422)
-    sms_code = int(str(randint(0, 9)) + str(randint(0, 9)) + str(randint(0, 9)) + str(randint(0, 9)))
-    sms_text = "ROSTELESET код подтверждения: " + str(sms_code)
+    sms_code = int(str(randint(1, 9)) + str(randint(0, 9)) + str(randint(0, 9)) + str(randint(0, 9)))
+    sms_text = os.getenv('KANNEL_TEXT') + str(sms_code)
     user_phone = int(request_data['userPhone'])
     temp_user = Temps(userphone=user_phone, smscode=sms_code)
-    #db.session.add(temp_user)
-    #db.session.commit()
+    #db.session.query(Temps).filter_by(userphone=int(user_phone)).delete()
+    db.session.add(temp_user)
+    db.session.commit()
     kannel_params2 = (('to', user_phone), ('text', sms_text.encode('utf-16-be').decode('utf-8').upper()))
     try:
         response = requests.get(url=kannel_url, params=kannel_params + kannel_params2)
@@ -769,12 +787,12 @@ def user_sendName():
     response = app.response_class(status=204, mimetype='application/json')
     return response
 
-@app.route('/api/address/getHcsList', methods=['POST'])
-def address_getHcsList():
+@app.route('/api/user/getBillingList', methods=['POST'])
+def user_getBillingList():
     global response
-    access_verification(request.headers)
-    response = {'code':200,'name':'OK','message':'Хорошо','data':[{'houseId':'19260','address':'Липецк, ул. Верховая, дом 17','hasPlog':'t','doors':[{'domophoneId':'343','doorId':0,'entrance':'1','icon':'entrance','name':'Подъезд'},{'domophoneId':'70','doorId':0,'entrance':'1','icon':'entrance','name':'Подъезд 1'},{'domophoneId':'124','doorId':0,'icon':'entrance','name':'Подъезд 2'}],'cctv':2},{'houseId':'6694','address':'Липецк, ул. Пионерская, дом 5\'б\'','hasPlog':'t','doors':[{'domophoneId':'79','doorId':0,'entrance':'3','icon':'entrance','name':'Подъезд'},{'domophoneId':'75','doorId':0,'icon':'wicket','name':'Калитка'},{'domophoneId':'297','doorId':0,'icon':'wicket','name':'Калитка доп'},{'domophoneId':'131','doorId':0,'icon':'gate','name':'Ворота'}],'cctv':14}]}
-    return jsonify(response)
+    phone = access_verification(request.headers)
+    sub_response = requests.post(billing_url + "getlist", headers={'Content-Type':'application/json'}, data=json.dumps({'phone': phone})).json()
+    return jsonify(sub_response)
 
 @app.errorhandler(401)
 def not_found(error):

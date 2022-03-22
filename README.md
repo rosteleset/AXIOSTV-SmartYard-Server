@@ -49,15 +49,7 @@ mv example.env .env
 
 su - postgres
 
-psql
-
-CREATE DATABASE smartyard WITH OWNER "smartyard" ENCODING 'UTF8';
-
-CREATE USER smartyard WITH PASSWORD 'smartyardpass';
-
-GRANT ALL PRIVILEGES ON DATABASE smartyard TO smartyard;
-
-\q
+psql -f db/init.sql
 
 exit
 

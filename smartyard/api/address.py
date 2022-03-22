@@ -315,7 +315,9 @@ def intercom():
 @address_branch.route("/offices", methods=["POST"])
 def offices():
     access_verification(request.headers)
-    if not request.get_json():
+
+    request_data = request.get_json() or {}
+    if not request_data:
         abort(
             422,
             {
@@ -324,7 +326,7 @@ def offices():
                 "message": "Необрабатываемый экземпляр",
             },
         )
-    request_data = request.get_json()
+
     return jsonify(
         {
             "code": 200,

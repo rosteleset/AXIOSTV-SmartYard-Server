@@ -36,11 +36,13 @@ billing_url=os.getenv('BILLING_URL')
 
 
 def access_verification(key):
-    if not key.get('Authorization'):
-        abort (422, {'code':422,'name':'Отсутствует токен авторизации','message':'Отсутствует токен авторизации'})
-    if not db.session.query(db.session.query(Users).filter_by(uuid=key.get('Authorization')[7:]).exists()).scalar():
-        abort (401, {'code':401,'name':'Не авторизован','message':'Не авторизован'})
-    return db.session.query(Users.userphone).filter_by(uuid=key.get('Authorization')[7:]).first()[0]
+    auth_key = key.get('Authorization')
+    if not auth_key:
+        abort(422, {'code':422,'name':'Отсутствует токен авторизации','message':'Отсутствует токен авторизации'})
+    user = db.session.query(Users.userphone).filter_by(uuid=auth_key[7:]).first()
+    if not user:
+        abort(401, {'code':401,'name':'Не авторизован','message':'Не авторизован'})
+    return user[0]
 
 def json_verification(input_json):
     if not input_json:

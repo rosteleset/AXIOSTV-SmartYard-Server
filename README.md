@@ -1,3 +1,4 @@
+# Описание
 Серверная часть, которая позволяет использовать SmartYard приложения для умных домофонов и видеонаблюдения
 
 Описаны все используемые в API вызовы, но не все полностью реализованы, часть ответов захардкодены. 
@@ -16,35 +17,31 @@
 Компания, в которой я работаю, CentOS очень давно является корпоративным стандартом. Имеется свой репозиторий, который решает вопрос
 с необходимыми версиями ПО.
 
-Приступим. Необходимо выполнить следующие команды в терминале под рутом:
+# Запуск
 
+Приступим.
+
+## Необходимо выполнить следующие команды в терминале под рутом:
+
+```bash
 yum install -y python36-virtualenv postgresql-server nginx supervisor
+```
 
-#Переносим файл smartyard.ini в /etc/supervisord.d 
+## Переносим файл smartyard.ini в /etc/supervisord.d 
 
-#Добавляем автозапуск postgresql-server nginx supervisor
+## Добавляем автозапуск postgresql-server nginx supervisor
 
-#Стартуем postgresql-server nginx
+## Стартуем postgresql-server nginx
 
-#Далее в терминале выполняем команды (из под root`а):
-
+## Далее в терминале выполняем команды (из под root`а):
+```bash
 cd /opt
 
 mkdir smartyard
 
 virtualenv-3.6 smartyard
 
-smartyard/bin/pip install requests
-
-smartyard/bin/pip install flask
-
-smartyard/bin/pip install psycopg2-binary
-
-smartyard/bin/pip install smartyard/bin/pip install
-
-smartyard/bin/pip install Flask-Migrate
-
-smartyard/bin/pip install python-dotenv
+smartyard/bin/pip install -r requirements.txt
 
 cd smartyard
 
@@ -73,31 +70,26 @@ bin/flask db migrate
 bin/flask db upgrade
 
 ./app.py
-
+```
 
 Основные настройки, в т.ч. подключение к базе данных (PG_...) и серверу kannel (KANNEL_), а также имя отправителя смс (поддерживается не всеми смс-агрегаторами) и текстовая строка перед 4-х значным кодом подтверждения (текст смс) находятся в файле .env и интуитвно понятны. Кроме того, необходимо настроить nginx, добавив в конфиг следующие строчки:
- 
- location /api {
- 
-    proxy_pass      http://127.0.0.1:5000;
-    
-    proxy_set_header HOST $host;
-    
-    proxy_set_header X-Forwarded-Proto $scheme;
-    
-    proxy_set_header X-Real-IP $remote_addr;
-    
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    
-    proxy_set_header X-Forwarded-Proto $scheme;
-    
-    proxy_set_header X-Request-Id $request_id;
-    
-  }
 
-#Стартуем supervisord:
+``` nginx
+location /api {
+  proxy_pass      http://127.0.0.1:5000;
+  proxy_set_header HOST $host;
+  proxy_set_header X-Forwarded-Proto $scheme;
+  proxy_set_header X-Real-IP $remote_addr;
+  proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+  proxy_set_header X-Forwarded-Proto $scheme;
+  proxy_set_header X-Request-Id $request_id;
+}
+```
+## Стартуем supervisord:
+
+```bash
 systemctl start supervisord
-
+```
 
 Лицензия и условия использования
 

@@ -597,7 +597,10 @@ def plog_days():
 @address_branch.route("/registerQR", methods=["POST"])
 def register_qr():
     access_verification(request.headers)
-    if not request.get_json():
+
+    request_data = request.get_json() or {}
+    qr = request_data.get("QR")
+    if not qr:
         abort(
             422,
             {
@@ -606,33 +609,24 @@ def register_qr():
                 "message": "Необрабатываемый экземпляр",
             },
         )
-    request_data = request.get_json()
-    if not "QR" in request_data:
-        abort(
-            422,
-            {
-                "code": 422,
-                "name": "Unprocessable Entity",
-                "message": "Необрабатываемый экземпляр",
-            },
-        )
-    QR = request_data["QR"]
-    QRcurrent = QR + "1"
-    if QR == QRcurrent:
+
+    qr_current = qr + "1"
+    if qr == qr_current:
         response = {
             "code": 520,
             "message": "Этот пользователь уже зарегистрирован в системе",
         }
-    if QR != QR:
+    # TODO: Проверить: со следующими условиями что-то не то
+    if qr != qr:
         response = {"code": 520, "message": "Некорректный QR-код!"}
-    if QR != QR:
+    if qr != qr:
         response = {
             "code": 200,
             "name": "OK",
             "message": "Хорошо",
             "data": "QR-код не является кодом для доступа к квартире",
         }
-    if QR == QR:
+    if qr == qr:
         response = {
             "code": 200,
             "name": "OK",

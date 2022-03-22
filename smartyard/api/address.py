@@ -510,7 +510,10 @@ def plog():
 @address_branch.route("/plogDays", methods=["POST"])
 def plog_days():
     access_verification(request.headers)
-    if not request.get_json():
+
+    request_data = request.get_json() or {}
+    flat_id = request_data["flatId"]
+    if not flat_id:
         abort(
             422,
             {
@@ -519,17 +522,7 @@ def plog_days():
                 "message": "Необрабатываемый экземпляр",
             },
         )
-    request_data = request.get_json()
-    if not "flatId" in request_data:
-        abort(
-            422,
-            {
-                "code": 422,
-                "name": "Unprocessable Entity",
-                "message": "Необрабатываемый экземпляр",
-            },
-        )
-    flatId = request_data["flatId"]
+
     return jsonify(
         {
             "code": 200,

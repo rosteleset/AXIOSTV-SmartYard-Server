@@ -10,6 +10,9 @@ from dotenv import load_dotenv
 from requests.exceptions import HTTPError
 import logging, sys
 
+from smartyard.db import create_db_connection, Temps, Users
+
+
 dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
 if os.path.exists(dotenv_path):
     load_dotenv(dotenv_path)
@@ -18,48 +21,22 @@ else:
     exit()
 
 app = Flask(__name__)
-app.config['JSON_AS_ASCII'] = False
 
+app.config['JSON_AS_ASCII'] = False
 app.config['SQLALCHEMY_DATABASE_URI'] = "postgresql://" + os.getenv('PG_USER') + ":" + os.getenv('PG_PASS') + "@" + os.getenv("PG_HOST") + ":5432/" + os.getenv('PG_DBNAME')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-db = SQLAlchemy(app)
+
+db = create_db_connection()
+db.init_app(app)
 migrate = Migrate(app, db)
 
 kannel_url = "http://%s:%d/cgi-bin/sendsms" % (os.getenv('KANNEL_HOST'), int(os.getenv('KANNEL_PORT')))
 kannel_params = (('user', os.getenv('KANNEL_USER')), ('pass', os.getenv('KANNEL_PASS')), ('from', os.getenv('KANNEL_FROM')), ('coding', '2'))
 billing_url=os.getenv('BILLING_URL')
 
-class Temps(db.Model):
-    __tablename__ = 'temps'
 
-    userphone = db.Column(db.BigInteger, primary_key=True)
-    smscode = db.Column(db.Integer, index=True, unique=True)
 
-    def __init__(self, userphone, smscode):
-        self.userphone = userphone
-        self.smscode = smscode
 
-    def __repr__(self):
-        return f""
-
-class Users(db.Model):
-    __tablename__ = 'users'
-
-    uuid = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    userphone = db.Column(db.BigInteger, index=True, unique=True)
-    name = db.Column(db.String(24))
-    patronymic = db.Column(db.String(24))
-    email = db.Column(db.String(60))
-
-    def __init__(self, uuid, userphone, name, patronymic, email):
-        self.uuid = uuid
-        self.userphone = userphone
-        self.name = name
-        self.patronymic = patronymic
-        self.email = email
-
-    def __repr__(self):
-        return f""
 
 def access_verification(key):
     global response

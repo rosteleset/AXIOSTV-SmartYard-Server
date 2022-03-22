@@ -11,6 +11,7 @@ from requests.exceptions import HTTPError
 import logging, sys
 
 from smartyard.db import create_db_connection, Temps, Users
+from smartyard.utils import access_verification
 
 
 dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
@@ -35,18 +36,7 @@ kannel_params = (('user', os.getenv('KANNEL_USER')), ('pass', os.getenv('KANNEL_
 billing_url=os.getenv('BILLING_URL')
 
 
-def access_verification(key):
-    auth_key = key.get('Authorization')
-    if not auth_key:
-        abort(422, {'code':422,'name':'Отсутствует токен авторизации','message':'Отсутствует токен авторизации'})
-    user = db.session.query(Users.userphone).filter_by(uuid=auth_key[7:]).first()
-    if not user:
-        abort(401, {'code':401,'name':'Не авторизован','message':'Не авторизован'})
-    return user[0]
 
-def json_verification(input_json):
-    if not input_json:
-        abort (422, {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'})
 
 @app.route('/api/')
 def index():

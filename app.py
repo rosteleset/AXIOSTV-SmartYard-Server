@@ -13,6 +13,7 @@ import logging, sys
 from smartyard.db import create_db_connection, Temps, Users
 from smartyard.utils import access_verification
 from smartyard.api.address import address_branch
+from smartyard.api.cctv import cctv_branch
 
 
 dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
@@ -44,93 +45,7 @@ def index():
     return "Hello, World!"
 
 app.register_blueprint(address_branch, url_prefix="/api")
-
-@app.route('/api/cctv/all', methods=['POST'])
-def cctv_all():
-    access_verification(request.headers)
-    if not request.get_json():
-        abort (422, {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'})
-    request_data = request.get_json()
-    return "Hello, World!"
-
-@app.route('/api/cctv/camMap', methods=['POST'])
-def cctv_camMap():
-    access_verification(request.headers)
-    return jsonify({
-        'code':200,
-        'name':'OK',
-        'message':'Хорошо',
-        'data': [
-            {
-                'id':'70',
-                'url':'https:\/\/fl2.lanta.me:8443\/91052',
-                'token':'acd0c17657395ff3f69d68e74907bb3a',
-                'frs':'t'
-            },
-            {
-                'id':'75',
-                'url':'https:\/\/fl2.lanta.me:8443\/91078',
-                'token':'acd0c17657395ff3f69d68e74907bb3a',
-                'frs':'t'
-            },
-            {
-                'id':'79',
-                'url':'https:\/\/fl2.lanta.me:8443\/91072',
-                'token':'acd0c17657395ff3f69d68e74907bb3a',
-                'frs':'t'
-            },
-            {
-                'id':'124',
-                'url':'https:\/\/fl2.lanta.me:8443\/95594',
-                'token':'acd0c17657395ff3f69d68e74907bb3a',
-                'frs':'t'
-            },
-            {
-                'id':'131',
-                'url':'https:\/\/fl2.lanta.me:8443\/91174',
-                'token':'acd0c17657395ff3f69d68e74907bb3a',
-                'frs':'f'
-            },
-            {
-                'id':'343',
-                'url':'https:\/\/fl2.lanta.me:8443\/90753',
-                'token':'acd0c17657395ff3f69d68e74907bb3a',
-                'frs':'t'
-            }
-        ]
-    })
-
-@app.route('/api/cctv/overview', methods=['POST'])
-def cctv_overview():
-    access_verification(request.headers)
-    if not request.get_json():
-        abort (422, {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'})
-    request_data = request.get_json()
-    return "Hello, World!"
-
-@app.route('/api/cctv/recDownload', methods=['POST'])
-def cctv_recDownload():
-    access_verification(request.headers)
-    if not request.get_json():
-        abort (422, {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'})
-    request_data = request.get_json()
-    return "Hello, World!"
-
-@app.route('/api/cctv/recPrepare', methods=['POST'])
-def cctv_recPrepare():
-    access_verification(request.headers)
-    if not request.get_json():
-        abort (422, {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'})
-    request_data = request.get_json()
-    return "Hello, World!"
-
-@app.route('/api/cctv/youtube', methods=['POST'])
-def cctv_youtube():
-    access_verification(request.headers)
-    if not request.get_json():
-        abort (422, {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'})
-    request_data = request.get_json()
-    return "Hello, World!"
+app.register_blueprint(cctv_branch, url_prefix="/api")
 
 @app.route('/api/ext/ext', methods=['POST'])
 def ext_ext():

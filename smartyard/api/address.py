@@ -657,7 +657,9 @@ def resend():
 @address_branch.route("/resetCode", methods=["POST"])
 def reset_code():
     access_verification(request.headers)
-    if not request.get_json():
+
+    request_data = request.get_json() or {}
+    if not request_data:
         abort(
             422,
             {
@@ -666,5 +668,5 @@ def reset_code():
                 "message": "Необрабатываемый экземпляр",
             },
         )
-    request_data = request.get_json()
+
     return "Hello, World!"

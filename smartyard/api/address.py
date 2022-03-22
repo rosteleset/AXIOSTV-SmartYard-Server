@@ -8,7 +8,14 @@ address_branch = Blueprint(url_prefix="/address")
 @address_branch.route("/access", methods=["POST"])
 def access():
     access_verification(request.headers)
-    if not request.get_json():
+
+    request_data = request.get_json() or {}
+    guestPhone = request_data.get("guestPhone")
+    flat_id = request_data.get("flatId")
+    client_id = request_data.get("clientId")
+    expire = request_data.get("expire")
+
+    if not all({guestPhone, flat_id, client_id, expire}):
         abort(
             422,
             {
@@ -17,47 +24,7 @@ def access():
                 "message": "Необрабатываемый экземпляр",
             },
         )
-    request_data = request.get_json()
-    if not "guestPhone" in request_data:
-        abort(
-            422,
-            {
-                "code": 422,
-                "name": "Unprocessable Entity",
-                "message": "Необрабатываемый экземпляр",
-            },
-        )
-    guestPhone = request_data["guestPhone"]
-    if not "flatId" in request_data:
-        abort(
-            422,
-            {
-                "code": 422,
-                "name": "Unprocessable Entity",
-                "message": "Необрабатываемый экземпляр",
-            },
-        )
-    flatId = request_data["flatId"]
-    if not "clientId" in request_data:
-        abort(
-            422,
-            {
-                "code": 422,
-                "name": "Unprocessable Entity",
-                "message": "Необрабатываемый экземпляр",
-            },
-        )
-    clientId = request_data["clientId"]
-    if not "expire" in request_data:
-        abort(
-            422,
-            {
-                "code": 422,
-                "name": "Unprocessable Entity",
-                "message": "Необрабатываемый экземпляр",
-            },
-        )
-    expire = request_data["expire"]
+
     return Response(status=204, mimetype="application/json")
 
 

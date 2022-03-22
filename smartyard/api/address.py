@@ -371,7 +371,10 @@ def offices():
 @address_branch.route("/openDoor", methods=["POST"])
 def open_door():
     access_verification(request.headers)
-    if not request.get_json():
+
+    request_data = request.get_json() or {}
+    domophone_id = request_data.get("domophoneId")
+    if not domophone_id:
         abort(
             422,
             {
@@ -380,17 +383,7 @@ def open_door():
                 "message": "Необрабатываемый экземпляр",
             },
         )
-    request_data = request.get_json()
-    if not "domophoneId" in request_data:
-        abort(
-            422,
-            {
-                "code": 422,
-                "name": "Unprocessable Entity",
-                "message": "Необрабатываемый экземпляр",
-            },
-        )
-    domophoneId = request_data["domophoneId"]
+
     return Response(status=204, mimetype="application/json")
 
 

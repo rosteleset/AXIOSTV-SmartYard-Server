@@ -19,6 +19,7 @@ from smartyard.api.frs import frs_branch
 from smartyard.api.geo import geo_branch
 from smartyard.api.inbox import inbox_branch
 from smartyard.api.issues import issues_branch
+from smartyard.api.pay import pay_branch
 
 
 dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
@@ -56,30 +57,8 @@ app.register_blueprint(frs_branch, url_prefix="/api")
 app.register_blueprint(geo_branch, url_prefix="/api")
 app.register_blueprint(inbox_branch, url_prefix="/api")
 app.register_blueprint(issues_branch, url_prefix="/api")
+app.register_blueprint(pay_branch, url_prefix="/api")
 
-
-@app.route('/api/pay/prepare', methods=['POST'])
-def pay_prepare():
-    phone = access_verification(request.headers)
-    if not request.get_json():
-        abort (422, {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'})
-    request_data = request.get_json()
-    logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
-    logging.debug(repr(request_data['clientId']))
-    logging.debug(repr(request_data['amount']))
-    sub_response = requests.post(billing_url + "createinvoice", headers={'Content-Type':'application/json'}, data=json.dumps({'login': request_data['clientId'], 'amount' : request_data['amount'], 'phone' : phone})).json()
-    return jsonify(sub_response)
-
-@app.route('/api/pay/process', methods=['POST'])
-def pay_process():
-    access_verification(request.headers)
-    if not request.get_json():
-        abort (422, {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'})
-    request_data = request.get_json()
-    logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
-    logging.debug(repr(request_data['paymentId']))
-    logging.debug(repr(request_data['sbId']))
-    return jsonify({'code':200,'name':'OK','message':'Хорошо','data':'Платеж в обработке'})
 
 @app.route('/api/sip/helpMe', methods=['POST'])
 def sip_helpMe():

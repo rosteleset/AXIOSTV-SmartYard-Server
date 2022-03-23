@@ -2,11 +2,11 @@ from flask import Blueprint, Response, abort, request
 
 from smartyard.utils import access_verification
 
-issues_branch = Blueprint(url_prefix="/issues")
+issues_branch = Blueprint("issues", __name__, url_prefix="/issues")
 
 
-@issues_branch.route("/api/issues/action", methods=["POST"])
-def issues_action():
+@issues_branch.route("/action", methods=["POST"])
+def action():
     access_verification(request.headers)
 
     request_data = request.get_json() or {}
@@ -23,8 +23,8 @@ def issues_action():
     return "Hello, World!"
 
 
-@issues_branch.route("/api/issues/comment", methods=["POST"])
-def issues_comment():
+@issues_branch.route("/comment", methods=["POST"])
+def comment():
     access_verification(request.headers)
 
     request_data = request.get_json() or {}
@@ -41,8 +41,8 @@ def issues_comment():
     return "Hello, World!"
 
 
-@issues_branch.route("/api/issues/create", methods=["POST"])
-def issues_create():
+@issues_branch.route("/create", methods=["POST"])
+def create():
     access_verification(request.headers)
 
     request_data = request.get_json() or {}
@@ -59,7 +59,7 @@ def issues_create():
     return "Hello, World!"
 
 
-@issues_branch.route("/api/issues/listConnect", methods=["POST"])
-def issues_listConnect():
+@issues_branch.route("/listConnect", methods=["POST"])
+def list_connect():
     access_verification(request.headers)
     return Response(status=204, mimetype="application/json")

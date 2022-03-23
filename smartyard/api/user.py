@@ -10,11 +10,11 @@ from smartyard.config import get_config
 from smartyard.db import Temps, Users, create_db_connection
 from smartyard.utils import access_verification
 
-user_branch = Blueprint(url_prefix="/user")
+user_branch = Blueprint("user", __name__, url_prefix="/user")
 db = create_db_connection()
 
 
-@user_branch.route("/api/user/addMyPhone", methods=["POST"])
+@user_branch.route("/addMyPhone", methods=["POST"])
 def add_my_phone():
     access_verification(request.headers)
 
@@ -37,7 +37,7 @@ def add_my_phone():
     return Response(status=204, mimetype="application/json")
 
 
-@user_branch.route("/api/user/appVersion", methods=["POST"])
+@user_branch.route("/appVersion", methods=["POST"])
 def app_version():
     access_verification(request.headers)
     request_data = request.get_json() or {}
@@ -59,7 +59,7 @@ def app_version():
         )
 
 
-@user_branch.route("/api/user/confirmCode", methods=["POST"])
+@user_branch.route("/confirmCode", methods=["POST"])
 def confirm_code():
     request_data = request.get_json() or {}
     userPhone = request_data.get("userPhone", "")
@@ -134,7 +134,7 @@ def confirm_code():
     )
 
 
-@user_branch.route("/api/user/getPaymentsList", methods=["POST"])
+@user_branch.route("/getPaymentsList", methods=["POST"])
 def get_payments_list():
     phone = access_verification(request.headers)
     config = get_config()
@@ -146,7 +146,7 @@ def get_payments_list():
     return jsonify(response)
 
 
-@user_branch.route("/api/user/notification", methods=["POST"])
+@user_branch.route("/notification", methods=["POST"])
 def notification():
     access_verification(request.headers)
     money = "t"
@@ -161,13 +161,13 @@ def notification():
     )
 
 
-@user_branch.route("/api/user/ping", methods=["POST"])
+@user_branch.route("/ping", methods=["POST"])
 def ping():
     access_verification(request.headers)
     return Response(status=204, mimetype="application/json")
 
 
-@user_branch.route("/api/user/pushTokens", methods=["POST"])
+@user_branch.route("/pushTokens", methods=["POST"])
 def push_tokens():
     access_verification(request.headers)
     return jsonify(
@@ -183,7 +183,7 @@ def push_tokens():
     )
 
 
-@user_branch.route("/api/user/registerPushToken", methods=["POST"])
+@user_branch.route("/registerPushToken", methods=["POST"])
 def register_push_token():
     access_verification(request.headers)
 
@@ -206,7 +206,7 @@ def register_push_token():
     return Response(status=204, mimetype="application/json")
 
 
-@user_branch.route("/api/user/requestCode", methods=["POST"])
+@user_branch.route("/requestCode", methods=["POST"])
 def request_code():
     request_data = request.get_json() or {}
     user_phone = request_data.get("userPhone", "")
@@ -256,7 +256,7 @@ def request_code():
     return Response(status=204, mimetype="application/json")
 
 
-@user_branch.route("/api/user/restore", methods=["POST"])
+@user_branch.route("/restore", methods=["POST"])
 def restore():
     access_verification(request.headers)
     request_data = request.get_json() or {}
@@ -306,7 +306,7 @@ def restore():
     notification = request_data.get("notification")
 
 
-@user_branch.route("/api/user/sendName", methods=["POST"])
+@user_branch.route("/sendName", methods=["POST"])
 def send_name():
     access_verification(request.headers)
     request_data = request.get_json() or {}
@@ -326,7 +326,7 @@ def send_name():
     return Response(status=204, mimetype="application/json")
 
 
-@user_branch.route("/api/user/getBillingList", methods=["POST"])
+@user_branch.route("/getBillingList", methods=["POST"])
 def get_billing_list():
     phone = access_verification(request.headers)
     config = get_config()

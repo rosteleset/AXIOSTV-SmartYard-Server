@@ -2,7 +2,7 @@ from flask import Blueprint, abort, request
 
 from smartyard.utils import access_verification
 
-geo_branch = Blueprint(url_prefix="/geo")
+geo_branch = Blueprint("geo", __name__, url_prefix="/geo")
 
 
 @geo_branch.route("/address", methods=["POST"])

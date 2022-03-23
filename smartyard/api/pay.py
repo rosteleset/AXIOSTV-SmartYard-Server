@@ -1,7 +1,6 @@
 import json
 import logging
 import sys
-from distutils.command.config import config
 
 import requests
 from flask import Blueprint, abort, jsonify, request
@@ -9,7 +8,7 @@ from flask import Blueprint, abort, jsonify, request
 from smartyard.config import get_config
 from smartyard.utils import access_verification
 
-pay_branch = Blueprint(url_prefix="/pay")
+pay_branch = Blueprint("pay", __name__, url_prefix="/pay")
 
 
 @pay_branch.route("/prepare", methods=["POST"])

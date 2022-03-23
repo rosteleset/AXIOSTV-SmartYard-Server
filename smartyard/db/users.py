@@ -1,8 +1,10 @@
+import uuid
+
 from sqlalchemy.dialects.postgresql import UUID
 
 from smartyard.db.database import create_db_connection
 
-_db = create_db_connection
+_db = create_db_connection()
 
 
 class Users(_db.Model):

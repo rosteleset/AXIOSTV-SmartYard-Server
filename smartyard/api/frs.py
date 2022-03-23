@@ -2,7 +2,7 @@ from flask import Blueprint, abort, request
 
 from smartyard.utils import access_verification
 
-frs_branch = Blueprint(url_prefix="/frs")
+frs_branch = Blueprint("frs", __name__, url_prefix="/frs")
 
 
 @frs_branch.route("/disLike", methods=["POST"])

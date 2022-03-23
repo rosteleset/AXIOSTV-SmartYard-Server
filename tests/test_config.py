@@ -25,4 +25,4 @@ def test_exists_variable(env_file: str) -> None:
 def test_not_exists_variable(env_file: str) -> None:
     config = Config(env_file)
     with pytest.raises(VariableNotSetException):
-        config.PG_PORT
+        config.PG_PORTS

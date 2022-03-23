@@ -2,7 +2,7 @@ from flask import Blueprint, abort, request
 
 from smartyard.utils import access_verification
 
-ext_branch = Blueprint(url_prefix="/ext")
+ext_branch = Blueprint("ext", __name__, url_prefix="/ext")
 
 
 @ext_branch.route("/ext", methods=["POST"])

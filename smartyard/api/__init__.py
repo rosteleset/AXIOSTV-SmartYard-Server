@@ -1,4 +1,6 @@
-from flask import Blueprint, jsonify, make_response
+import json
+
+from flask import Blueprint, Response, jsonify, make_response
 
 from .address import address_branch
 from .cctv import cctv_branch
@@ -13,7 +15,7 @@ from .user import user_branch
 
 __all__ = ["api"]
 
-api = Blueprint(url_prefix="/api")
+api = Blueprint("api", __name__, url_prefix="/api")
 
 for branch in {
     address_branch,
@@ -27,7 +29,7 @@ for branch in {
     sip_branch,
     user_branch,
 }:
-    api.register_blueprint(branch, url_prefix="/api")
+    api.register_blueprint(branch)
 
 
 @api.route("/")
@@ -37,43 +39,72 @@ def index():
 
 @api.errorhandler(401)
 def not_found(error):
-    return make_response(jsonify(error), 401)
+    return Response(
+        response=json.dumps(error.description),
+        status=401,
+        content_type="application/json",
+    )
 
 
 @api.errorhandler(403)
 def not_found(error):
-    return make_response(jsonify(error), 403)
+    return Response(
+        response=json.dumps(error.description),
+        status=403,
+        content_type="application/json",
+    )
 
 
 @api.errorhandler(404)
 def not_found(error):
-    return make_response(jsonify({"error": "пользователь не найден"}), 404)
+    return Response(
+        response=json.dumps({"error": "пользователь не найден"}),
+        status=403,
+        content_type="application/json",
+    )
 
 
 @api.errorhandler(410)
 def not_found(error):
-    return make_response(jsonify({"error": "авторизация отозвана"}), 410)
+    return Response(
+        response=json.dumps({"error": "авторизация отозвана"}),
+        status=410,
+        content_type="application/json",
+    )
 
 
 @api.errorhandler(422)
 def not_found(error):
-    return make_response(jsonify(error), 422)
+    print("ERROR")
+    print(error)
+    print(error.description)
+    print(dir(error))
+    return Response(
+        response=json.dumps(error.description),
+        status=422,
+        content_type="application/json",
+    )
 
 
 @api.errorhandler(424)
 def not_found(error):
-    return make_response(jsonify({"error": "неверный токен"}), 424)
+    return Response(
+        response=json.dumps({"error": "неверный токен"}),
+        status=424,
+        content_type="application/json",
+    )
 
 
 @api.errorhandler(429)
 def not_found(error):
-    return make_response(
-        jsonify(
+    return Response(
+        response=json.dumps(
             {
                 "code": 429,
                 "name": "Too Many Requests",
                 "message": "Слишком много запросов",
             }
         ),
-        429,
+        status=429,
+        content_type="application/json",
     )

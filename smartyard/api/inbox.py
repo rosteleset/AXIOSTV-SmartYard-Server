@@ -2,7 +2,7 @@ from flask import Blueprint, abort, jsonify, request
 
 from smartyard.utils import access_verification
 
-inbox_branch = Blueprint(url_prefix="/inbox")
+inbox_branch = Blueprint("inbox", __name__, url_prefix="/inbox")
 
 
 @inbox_branch.route("/alert", methods=["POST"])

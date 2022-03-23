@@ -2,7 +2,7 @@ from flask import Blueprint, Response, abort, request
 
 from smartyard.utils import access_verification
 
-sip_branch = Blueprint(url_prefix="/sip")
+sip_branch = Blueprint("sip", __name__, url_prefix="/sip")
 
 
 @sip_branch.route("/helpMe", methods=["POST"])

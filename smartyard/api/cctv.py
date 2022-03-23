@@ -2,7 +2,7 @@ from flask import Blueprint, abort, jsonify, request
 
 from smartyard.utils import access_verification
 
-cctv_branch = Blueprint(url_prefix="/cctv")
+cctv_branch = Blueprint("cctv", __name__, url_prefix="/cctv")
 
 
 @cctv_branch.route("/all", methods=["POST"])

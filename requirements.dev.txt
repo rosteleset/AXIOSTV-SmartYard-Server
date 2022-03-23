@@ -1,0 +1,4 @@
+black==22.1.0
+isort==5.10.1
+pytest==7.1.1
+pytest-mock==3.7.0

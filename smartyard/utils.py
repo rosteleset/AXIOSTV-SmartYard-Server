@@ -1,6 +1,6 @@
 from flask import abort
 
-from smartyard.db import Users, create_db_connection
+from smartyard.logic.users_bank import UsersBank
 
 
 def access_verification(headers):
@@ -14,8 +14,7 @@ def access_verification(headers):
                 "message": "Отсутствует токен авторизации",
             },
         )
-    db = create_db_connection()
-    user = db.session.query(Users.userphone).filter_by(uuid=auth_key[7:]).first()
+    user = UsersBank().search_by_uuid(auth_key[7:])
     if not user:
         abort(401, {"code": 401, "name": "Не авторизован", "message": "Не авторизован"})
     return user[0]

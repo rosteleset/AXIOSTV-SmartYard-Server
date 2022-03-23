@@ -88,3 +88,44 @@ systemctl start supervisord
 Авторские права на используемое API принаддежат ЛанТа, код АКСИОСТВ
 
 Данный проект опубликован под стандартной общественной лицензией GNU GPLv3. Вы можете модифицировать и использовать наши наработки в своих проектах, в т.ч. коммерческих, при обязательном условии публикации их исходного кода. Также мы готовы рассмотреть ваши Pull requests, если вы хотите чтобы наш проект развивался с учётом ваших модификаций и доработок.
+
+
+# Разработка и тестирование
+## Подготовка
+Для разработки и тестирования необходимо установить дополнительные пакеты:
+```bash
+smartyard/bin/pip install -r requirements.dev.txt
+```
+
+## Тестирование
+```bash
+smartyard/bin/python -m pytest tests
+```
+
+## Автоматическое форматирование
+```bash
+smartyard/bin/black app.py
+smartyard/bin/black smartyard
+smartyard/bin/black tests
+```
+
+## Автоматическое форматирование импортов
+```bash
+smartyard/bin/isort app.py
+smartyard/bin/isort smartyard
+smartyard/bin/isort tests
+```
+
+## Проверка форматирования
+```bash
+smartyard/bin/black --check app.py
+smartyard/bin/black --check smartyard
+smartyard/bin/black --check tests
+```
+
+## Проверка форматирования импортов
+```bash
+smartyard/bin/isort --check app.py
+smartyard/bin/isort --check smartyard
+smartyard/bin/isort --check tests
+```

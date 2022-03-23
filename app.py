@@ -15,6 +15,7 @@ from smartyard.utils import access_verification
 from smartyard.api.address import address_branch
 from smartyard.api.cctv import cctv_branch
 from smartyard.api.ext import ext_branch
+from smartyard.api.frs import frs_branch
 
 
 dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
@@ -48,30 +49,7 @@ def index():
 app.register_blueprint(address_branch, url_prefix="/api")
 app.register_blueprint(cctv_branch, url_prefix="/api")
 app.register_blueprint(ext_branch, url_prefix="/api")
-
-@app.route('/api/frs/disLike', methods=['POST'])
-def frs_disLike():
-    access_verification(request.headers)
-    if not request.get_json():
-        abort (422, {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'})
-    request_data = request.get_json()
-    return "Hello, World!"
-
-@app.route('/api/frs/like', methods=['POST'])
-def frs_like():
-    access_verification(request.headers)
-    if not request.get_json():
-        abort (422, {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'})
-    request_data = request.get_json()
-    return "Hello, World!"
-
-@app.route('/api/frs/listFaces', methods=['POST'])
-def frs_listFaces():
-    access_verification(request.headers)
-    if not request.get_json():
-        abort (422, {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'})
-    request_data = request.get_json()
-    return "Hello, World!"
+app.register_blueprint(frs_branch, url_prefix="/api")
 
 @app.route('/api/geo/address', methods=['POST'])
 def geo_address():

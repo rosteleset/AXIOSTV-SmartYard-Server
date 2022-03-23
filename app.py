@@ -10,18 +10,8 @@ from dotenv import load_dotenv
 from requests.exceptions import HTTPError
 import logging, sys
 
-from smartyard.db import create_db_connection, Temps, Users
-from smartyard.utils import access_verification
-from smartyard.api.address import address_branch
-from smartyard.api.cctv import cctv_branch
-from smartyard.api.ext import ext_branch
-from smartyard.api.frs import frs_branch
-from smartyard.api.geo import geo_branch
-from smartyard.api.inbox import inbox_branch
-from smartyard.api.issues import issues_branch
-from smartyard.api.pay import pay_branch
-from smartyard.api.sip import sip_branch
-from smartyard.api.user import user_branch
+from smartyard.db import create_db_connection
+from smartyard.api import api
 
 
 dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
@@ -45,52 +35,7 @@ kannel_url = "http://%s:%d/cgi-bin/sendsms" % (os.getenv('KANNEL_HOST'), int(os.
 kannel_params = (('user', os.getenv('KANNEL_USER')), ('pass', os.getenv('KANNEL_PASS')), ('from', os.getenv('KANNEL_FROM')), ('coding', '2'))
 billing_url=os.getenv('BILLING_URL')
 
-
-
-
-@app.route('/api/')
-def index():
-    return "Hello, World!"
-
-app.register_blueprint(address_branch, url_prefix="/api")
-app.register_blueprint(cctv_branch, url_prefix="/api")
-app.register_blueprint(ext_branch, url_prefix="/api")
-app.register_blueprint(frs_branch, url_prefix="/api")
-app.register_blueprint(geo_branch, url_prefix="/api")
-app.register_blueprint(inbox_branch, url_prefix="/api")
-app.register_blueprint(issues_branch, url_prefix="/api")
-app.register_blueprint(pay_branch, url_prefix="/api")
-app.register_blueprint(sip_branch, url_prefix="/api")
-app.register_blueprint(user_branch, url_prefix="/api")
-
-
-@app.errorhandler(401)
-def not_found(error):
-    return make_response(jsonify(error), 401)
-
-@app.errorhandler(403)
-def not_found(error):
-    return make_response(jsonify(error), 403)
-
-@app.errorhandler(404)
-def not_found(error):
-    return make_response(jsonify({'error': 'пользователь не найден'}), 404)
-
-@app.errorhandler(410)
-def not_found(error):
-    return make_response(jsonify({'error': 'авторизация отозвана'}), 410)
-
-@app.errorhandler(422)
-def not_found(error):
-    return make_response(jsonify(error), 422)
-
-@app.errorhandler(424)
-def not_found(error):
-    return make_response(jsonify({'error': 'неверный токен'}), 424)
-
-@app.errorhandler(429)
-def not_found(error):
-    return make_response(jsonify({'code':429,'name':'Too Many Requests','message':'Слишком много запросов'}), 429)
+app.register_blueprint(api)
 
 if __name__ == '__main__':
     app.run(debug=True)

@@ -1,11 +1,12 @@
 import json
 import logging
-import os
 import sys
+from distutils.command.config import config
 
 import requests
 from flask import Blueprint, abort, jsonify, request
 
+from smartyard.config import get_config
 from smartyard.utils import access_verification
 
 pay_branch = Blueprint(url_prefix="/pay")
@@ -25,14 +26,14 @@ def prepare():
             },
         )
 
-    billing_url = os.getenv("BILLING_URL")
-
     logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
     logging.debug(repr(request_data["clientId"]))
     logging.debug(repr(request_data["amount"]))
 
+    config = get_config()
+
     sub_response = requests.post(
-        billing_url + "createinvoice",
+        config.BILLING_URL + "createinvoice",
         headers={"Content-Type": "application/json"},
         data=json.dumps(
             {

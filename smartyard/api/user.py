@@ -1,5 +1,4 @@
 import json
-import os
 import uuid
 from random import randint
 
@@ -7,22 +6,12 @@ import requests
 from flask import Blueprint, Response, abort, jsonify, request
 from requests.exceptions import HTTPError
 
+from smartyard.config import get_config
 from smartyard.db import Temps, Users, create_db_connection
 from smartyard.utils import access_verification
 
 user_branch = Blueprint(url_prefix="/user")
 db = create_db_connection()
-kannel_url = "http://%s:%d/cgi-bin/sendsms" % (
-    os.getenv("KANNEL_HOST"),
-    int(os.getenv("KANNEL_PORT")),
-)
-kannel_params = (
-    ("user", os.getenv("KANNEL_USER")),
-    ("pass", os.getenv("KANNEL_PASS")),
-    ("from", os.getenv("KANNEL_FROM")),
-    ("coding", "2"),
-)
-billing_url = os.getenv("BILLING_URL")
 
 
 @user_branch.route("/api/user/addMyPhone", methods=["POST"])
@@ -148,8 +137,9 @@ def confirm_code():
 @user_branch.route("/api/user/getPaymentsList", methods=["POST"])
 def get_payments_list():
     phone = access_verification(request.headers)
+    config = get_config()
     response = requests.post(
-        billing_url + "getlist",
+        config.BILLING_URL + "getlist",
         headers={"Content-Type": "application/json"},
         data=json.dumps({"phone": phone}),
     ).json()
@@ -230,23 +220,31 @@ def request_code():
             },
         )
 
+    config = get_config()
     sms_code = int(
         str(randint(1, 9))
         + str(randint(0, 9))
         + str(randint(0, 9))
         + str(randint(0, 9))
     )
-    sms_text = os.getenv("KANNEL_TEXT") + str(sms_code)
+    sms_text = f"{config.KANNEL_TEXT}{sms_code}"
     user_phone = int(user_phone)
     temp_user = Temps(userphone=user_phone, smscode=sms_code)
     db.session.add(temp_user)
     db.session.commit()
-    kannel_params2 = (
-        ("to", user_phone),
-        ("text", sms_text.encode("utf-16-be").decode("utf-8").upper()),
-    )
+
     try:
-        response = requests.get(url=kannel_url, params=kannel_params + kannel_params2)
+        response = requests.get(
+            url=f"http://{config.KANNEL_HOST}:{config.KANNEL_PORT}/{config.KANNEL_PATH}",
+            params=(
+                ("user", config.KANNEL_USER),
+                ("pass", config.KANNEL_PASS),
+                ("from", config.KANNEL_FROM),
+                ("coding", config.KANNEL_CODING),
+                ("to", user_phone),
+                ("text", sms_text.encode("utf-16-be").decode("utf-8").upper()),
+            ),
+        )
         response.raise_for_status()
     except HTTPError as http_err:
         print(f"HTTP error occurred: {http_err}")
@@ -331,8 +329,9 @@ def send_name():
 @user_branch.route("/api/user/getBillingList", methods=["POST"])
 def get_billing_list():
     phone = access_verification(request.headers)
+    config = get_config()
     sub_response = requests.post(
-        billing_url + "getlist",
+        config.BILLING_URL + "getlist",
         headers={"Content-Type": "application/json"},
         data=json.dumps({"phone": phone}),
     ).json()

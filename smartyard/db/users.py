@@ -2,11 +2,11 @@ from sqlalchemy.dialects.postgresql import UUID
 
 from smartyard.db.database import create_db_connection
 
-
 _db = create_db_connection
 
+
 class Users(_db.Model):
-    __tablename__ = 'users'
+    __tablename__ = "users"
 
     uuid = _db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     userphone = _db.Column(_db.BigInteger, index=True, unique=True)

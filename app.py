@@ -18,6 +18,7 @@ from smartyard.api.ext import ext_branch
 from smartyard.api.frs import frs_branch
 from smartyard.api.geo import geo_branch
 from smartyard.api.inbox import inbox_branch
+from smartyard.api.issues import issues_branch
 
 
 dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
@@ -54,36 +55,8 @@ app.register_blueprint(ext_branch, url_prefix="/api")
 app.register_blueprint(frs_branch, url_prefix="/api")
 app.register_blueprint(geo_branch, url_prefix="/api")
 app.register_blueprint(inbox_branch, url_prefix="/api")
+app.register_blueprint(issues_branch, url_prefix="/api")
 
-
-@app.route('/api/issues/action', methods=['POST'])
-def issues_action():
-    access_verification(request.headers)
-    if not request.get_json():
-        abort (422, {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'})
-    request_data = request.get_json()
-    return "Hello, World!"
-
-@app.route('/api/issues/comment', methods=['POST'])
-def issues_comment():
-    access_verification(request.headers)
-    if not request.get_json():
-        abort (422, {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'})
-    request_data = request.get_json()
-    return "Hello, World!"
-
-@app.route('/api/issues/create', methods=['POST'])
-def issues_create():
-    access_verification(request.headers)
-    if not request.get_json():
-        abort (422, {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'})
-    request_data = request.get_json()
-    return "Hello, World!"
-
-@app.route('/api/issues/listConnect', methods=['POST'])
-def issues_listConnect():
-    access_verification(request.headers)
-    return app.response_class(status=204, mimetype='application/json')
 
 @app.route('/api/pay/prepare', methods=['POST'])
 def pay_prepare():

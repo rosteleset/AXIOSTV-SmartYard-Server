@@ -14,6 +14,7 @@ from smartyard.db import create_db_connection, Temps, Users
 from smartyard.utils import access_verification
 from smartyard.api.address import address_branch
 from smartyard.api.cctv import cctv_branch
+from smartyard.api.ext import ext_branch
 
 
 dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
@@ -46,22 +47,7 @@ def index():
 
 app.register_blueprint(address_branch, url_prefix="/api")
 app.register_blueprint(cctv_branch, url_prefix="/api")
-
-@app.route('/api/ext/ext', methods=['POST'])
-def ext_ext():
-    access_verification(request.headers)
-    if not request.get_json():
-        abort (422, {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'})
-    request_data = request.get_json()
-    return "Hello, World!"
-
-@app.route('/api/ext/list', methods=['POST'])
-def ext_list():
-    access_verification(request.headers)
-    if not request.get_json():
-        abort (422, {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'})
-    request_data = request.get_json()
-    return "Hello, World!"
+app.register_blueprint(ext_branch, url_prefix="/api")
 
 @app.route('/api/frs/disLike', methods=['POST'])
 def frs_disLike():

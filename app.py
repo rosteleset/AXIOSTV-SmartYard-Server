@@ -17,6 +17,7 @@ from smartyard.api.cctv import cctv_branch
 from smartyard.api.ext import ext_branch
 from smartyard.api.frs import frs_branch
 from smartyard.api.geo import geo_branch
+from smartyard.api.inbox import inbox_branch
 
 
 dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
@@ -52,48 +53,7 @@ app.register_blueprint(cctv_branch, url_prefix="/api")
 app.register_blueprint(ext_branch, url_prefix="/api")
 app.register_blueprint(frs_branch, url_prefix="/api")
 app.register_blueprint(geo_branch, url_prefix="/api")
-
-@app.route('/api/inbox/alert', methods=['POST'])
-def inbox_alert():
-    access_verification(request.headers)
-    if not request.get_json():
-        abort (422, {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'})
-    request_data = request.get_json()
-    return "Hello, World!"
-
-@app.route('/api/inbox/chatReaded', methods=['POST'])
-def inbox_chatReaded():
-    access_verification(request.headers)
-    if not request.get_json():
-        abort (422, {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'})
-    request_data = request.get_json()
-    return "Hello, World!"
-
-@app.route('/api/inbox/delivered', methods=['POST'])
-def inbox_delivered():
-    access_verification(request.headers)
-    if not request.get_json():
-        abort (422, {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'})
-    request_data = request.get_json()
-    return "Hello, World!"
-
-@app.route('/api/inbox/inbox', methods=['POST'])
-def inbox_inbox():
-    access_verification(request.headers)
-    return jsonify({'code':200,'name':'OK','message':'Хорошо','data':{'count':0,'chat':0}})
-
-@app.route('/api/inbox/readed', methods=['POST'])
-def inbox_readed():
-    access_verification(request.headers)
-    if not request.get_json():
-        abort (422, {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'})
-    request_data = request.get_json()
-    return "Hello, World!"
-
-@app.route('/api/inbox/unreaded', methods=['POST'])
-def inbox_unreaded():
-    access_verification(request.headers)
-    return jsonify({'code':200,'name':'OK','message':'Хорошо','data':{'count':0,'chat':0}})
+app.register_blueprint(inbox_branch, url_prefix="/api")
 
 
 @app.route('/api/issues/action', methods=['POST'])

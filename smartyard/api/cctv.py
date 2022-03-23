@@ -94,7 +94,9 @@ def overview():
 @cctv_branch.route("/recDownload", methods=["POST"])
 def rec_download():
     access_verification(request.headers)
-    if not request.get_json():
+
+    request_data = request.get_json() or {}
+    if not request_data:
         abort(
             422,
             {
@@ -103,7 +105,7 @@ def rec_download():
                 "message": "Необрабатываемый экземпляр",
             },
         )
-    request_data = request.get_json()
+
     return "Hello, World!"
 
 

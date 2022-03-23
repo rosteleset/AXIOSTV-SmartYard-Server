@@ -16,6 +16,7 @@ from smartyard.api.address import address_branch
 from smartyard.api.cctv import cctv_branch
 from smartyard.api.ext import ext_branch
 from smartyard.api.frs import frs_branch
+from smartyard.api.geo import geo_branch
 
 
 dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
@@ -50,62 +51,7 @@ app.register_blueprint(address_branch, url_prefix="/api")
 app.register_blueprint(cctv_branch, url_prefix="/api")
 app.register_blueprint(ext_branch, url_prefix="/api")
 app.register_blueprint(frs_branch, url_prefix="/api")
-
-@app.route('/api/geo/address', methods=['POST'])
-def geo_address():
-    access_verification(request.headers)
-    if not request.get_json():
-        abort (422, {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'})
-    request_data = request.get_json()
-    return "Hello, World!"
-
-@app.route('/api/geo/coder', methods=['POST'])
-def geo_coder():
-    access_verification(request.headers)
-    if not request.get_json():
-        abort (422, {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'})
-    request_data = request.get_json()
-    return "Hello, World!"
-
-@app.route('/api/geo/getAllLocations', methods=['POST'])
-def geo_getAllLocations():
-    access_verification(request.headers)
-    if not request.get_json():
-        abort (422, {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'})
-    request_data = request.get_json()
-    return "Hello, World!"
-
-@app.route('/api/geo/getAllServices', methods=['POST'])
-def geo_getAllServices():
-    access_verification(request.headers)
-    if not request.get_json():
-        abort (422, {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'})
-    request_data = request.get_json()
-    return "Hello, World!"
-
-@app.route('/api/geo/getHouses', methods=['POST'])
-def geo_getHouses():
-    access_verification(request.headers)
-    if not request.get_json():
-        abort (422, {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'})
-    request_data = request.get_json()
-    return "Hello, World!"
-
-@app.route('/api/geo/getServices', methods=['POST'])
-def geo_getServices():
-    access_verification(request.headers)
-    if not request.get_json():
-        abort (422, {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'})
-    request_data = request.get_json()
-    return "Hello, World!"
-
-@app.route('/api/geo/getStreets', methods=['POST'])
-def geo_getStreets():
-    access_verification(request.headers)
-    if not request.get_json():
-        abort (422, {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'})
-    request_data = request.get_json()
-    return "Hello, World!"
+app.register_blueprint(geo_branch, url_prefix="/api")
 
 @app.route('/api/inbox/alert', methods=['POST'])
 def inbox_alert():

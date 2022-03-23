@@ -130,7 +130,9 @@ def rec_prepare():
 @cctv_branch.route("/youtube", methods=["POST"])
 def youtube():
     access_verification(request.headers)
-    if not request.get_json():
+
+    request_data = request.get_json() or {}
+    if not request_data:
         abort(
             422,
             {
@@ -139,5 +141,5 @@ def youtube():
                 "message": "Необрабатываемый экземпляр",
             },
         )
-    request_data = request.get_json()
+
     return "Hello, World!"

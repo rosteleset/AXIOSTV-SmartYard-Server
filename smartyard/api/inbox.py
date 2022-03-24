@@ -1,4 +1,4 @@
-from flask import Blueprint, abort, jsonify, request
+from flask import Blueprint, Response, abort, jsonify, request
 
 from smartyard.utils import access_verification
 
@@ -6,7 +6,7 @@ inbox_branch = Blueprint("inbox", __name__, url_prefix="/inbox")
 
 
 @inbox_branch.route("/alert", methods=["POST"])
-def alert():
+def alert() -> str:
     access_verification(request.headers)
 
     request_data = request.get_json() or {}
@@ -24,7 +24,7 @@ def alert():
 
 
 @inbox_branch.route("/chatReaded", methods=["POST"])
-def chatReaded():
+def chat_readed() -> str:
     access_verification(request.headers)
 
     request_data = request.get_json() or {}
@@ -42,7 +42,7 @@ def chatReaded():
 
 
 @inbox_branch.route("/delivered", methods=["POST"])
-def delivered():
+def delivered() -> str:
     access_verification(request.headers)
 
     request_data = request.get_json() or {}
@@ -60,7 +60,7 @@ def delivered():
 
 
 @inbox_branch.route("/inbox", methods=["POST"])
-def inbox():
+def inbox() -> Response:
     access_verification(request.headers)
     return jsonify(
         {
@@ -73,7 +73,7 @@ def inbox():
 
 
 @inbox_branch.route("/readed", methods=["POST"])
-def readed():
+def readed() -> str:
     access_verification(request.headers)
 
     request_data = request.get_json() or {}
@@ -91,7 +91,7 @@ def readed():
 
 
 @inbox_branch.route("/unreaded", methods=["POST"])
-def unreaded():
+def unreaded() -> Response:
     access_verification(request.headers)
     return jsonify(
         {

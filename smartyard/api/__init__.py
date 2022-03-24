@@ -75,10 +75,6 @@ def not_found(error):
 
 @api.errorhandler(422)
 def not_found(error):
-    print("ERROR")
-    print(error)
-    print(error.description)
-    print(dir(error))
     return Response(
         response=json.dumps(error.description),
         status=422,

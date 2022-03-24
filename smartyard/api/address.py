@@ -6,16 +6,16 @@ address_branch = Blueprint("address", __name__, url_prefix="/address")
 
 
 @address_branch.route("/access", methods=["POST"])
-def access():
+def access() -> Response:
     access_verification(request.headers)
 
     request_data = request.get_json() or {}
-    guestPhone = request_data.get("guestPhone")
+    guest_phone = request_data.get("guestPhone")
     flat_id = request_data.get("flatId")
     client_id = request_data.get("clientId")
     expire = request_data.get("expire")
 
-    if not all({guestPhone, flat_id, client_id, expire}):
+    if not all({guest_phone, flat_id, client_id, expire}):
         abort(
             422,
             {
@@ -29,7 +29,7 @@ def access():
 
 
 @address_branch.route("/getAddressList", methods=["POST"])
-def get_address_list():
+def get_address_list() -> Response:
     access_verification(request.headers)
     return jsonify(
         {
@@ -104,7 +104,7 @@ def get_address_list():
 
 
 @address_branch.route("/getSettingsList", methods=["POST"])
-def get_settings_list():
+def get_settings_list() -> Response:
     access_verification(request.headers)
     return jsonify(
         {
@@ -279,7 +279,7 @@ def get_settings_list():
 
 
 @address_branch.route("/intercom", methods=["POST"])
-def intercom():
+def intercom() -> Response:
     access_verification(request.headers)
 
     request_data = request.get_json() or {}
@@ -313,9 +313,10 @@ def intercom():
 
 
 @address_branch.route("/offices", methods=["POST"])
-def offices():
+def offices() -> Response:
     access_verification(request.headers)
 
+    # TODO: Есть ли необходимость проверки?
     request_data = request.get_json() or {}
     if not request_data:
         abort(
@@ -369,7 +370,7 @@ def offices():
 
 
 @address_branch.route("/openDoor", methods=["POST"])
-def open_door():
+def open_door() -> Response:
     access_verification(request.headers)
 
     request_data = request.get_json() or {}
@@ -388,7 +389,7 @@ def open_door():
 
 
 @address_branch.route("/plog", methods=["POST"])
-def plog():
+def plog() -> Response:
     access_verification(request.headers)
 
     request_data = request.get_json() or {}
@@ -508,11 +509,11 @@ def plog():
 
 
 @address_branch.route("/plogDays", methods=["POST"])
-def plog_days():
+def plog_days() -> Response:
     access_verification(request.headers)
 
     request_data = request.get_json() or {}
-    flat_id = request_data["flatId"]
+    flat_id = request_data.get("flatId")
     if not flat_id:
         abort(
             422,
@@ -595,7 +596,7 @@ def plog_days():
 
 
 @address_branch.route("/registerQR", methods=["POST"])
-def register_qr():
+def register_qr() -> Response:
     access_verification(request.headers)
 
     request_data = request.get_json() or {}
@@ -611,6 +612,7 @@ def register_qr():
         )
 
     qr_current = qr + "1"
+    # TODO: Проверить: с условием что-то не то
     if qr == qr_current:
         response = {
             "code": 520,
@@ -637,7 +639,7 @@ def register_qr():
 
 
 @address_branch.route("/resend", methods=["POST"])
-def resend():
+def resend() -> str:
     access_verification(request.headers)
 
     request_data = request.get_json() or {}
@@ -655,7 +657,7 @@ def resend():
 
 
 @address_branch.route("/resetCode", methods=["POST"])
-def reset_code():
+def reset_code() -> str:
     access_verification(request.headers)
 
     request_data = request.get_json() or {}

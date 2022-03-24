@@ -3,6 +3,7 @@ import os
 import pytest
 from flask import Flask
 from flask.testing import FlaskClient, FlaskCliRunner
+from pytest_mock import MockerFixture
 
 from smartyard import create_app
 from smartyard.config import get_config
@@ -92,7 +93,9 @@ endpoints = {
 
 
 @pytest.mark.parametrize("method,url", endpoints)
-def test_with_auth_without_authorization(client, method, url) -> None:
+def test_with_auth_without_authorization(
+    client: FlaskClient, method: str, url: str
+) -> None:
     response = client.open(url, method=method.upper())
     assert response.status_code == 422
     assert response.content_type == "application/json"
@@ -104,7 +107,9 @@ def test_with_auth_without_authorization(client, method, url) -> None:
 
 
 @pytest.mark.parametrize("method,url", endpoints)
-def test_with_auth_with_wrong_token(client, method, url, mocker) -> None:
+def test_with_auth_with_wrong_token(
+    client: FlaskClient, method: str, url: str, mocker: MockerFixture
+) -> None:
     mocker.patch.object(UsersBank, "search_by_uuid", return_value=None)
     response = client.open(
         url, method=method.upper(), headers={"Authorization": "auth"}

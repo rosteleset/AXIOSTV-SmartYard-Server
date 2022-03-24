@@ -6,7 +6,7 @@ issues_branch = Blueprint("issues", __name__, url_prefix="/issues")
 
 
 @issues_branch.route("/action", methods=["POST"])
-def action():
+def action() -> str:
     access_verification(request.headers)
 
     request_data = request.get_json() or {}
@@ -24,7 +24,7 @@ def action():
 
 
 @issues_branch.route("/comment", methods=["POST"])
-def comment():
+def comment() -> str:
     access_verification(request.headers)
 
     request_data = request.get_json() or {}
@@ -42,7 +42,7 @@ def comment():
 
 
 @issues_branch.route("/create", methods=["POST"])
-def create():
+def create() -> str:
     access_verification(request.headers)
 
     request_data = request.get_json() or {}
@@ -60,6 +60,6 @@ def create():
 
 
 @issues_branch.route("/listConnect", methods=["POST"])
-def list_connect():
+def list_connect() -> Response:
     access_verification(request.headers)
     return Response(status=204, mimetype="application/json")

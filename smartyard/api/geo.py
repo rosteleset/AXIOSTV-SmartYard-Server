@@ -6,11 +6,11 @@ geo_branch = Blueprint("geo", __name__, url_prefix="/geo")
 
 
 @geo_branch.route("/address", methods=["POST"])
-def address():
+def address() -> str:
     access_verification(request.headers)
 
     request_data = request.get_json() or {}
-    if not request.get_json():
+    if not request_data:
         abort(
             422,
             {
@@ -24,11 +24,11 @@ def address():
 
 
 @geo_branch.route("/coder", methods=["POST"])
-def coder():
+def coder() -> str:
     access_verification(request.headers)
 
     request_data = request.get_json() or {}
-    if not request.get_json():
+    if not request_data:
         abort(
             422,
             {
@@ -42,11 +42,11 @@ def coder():
 
 
 @geo_branch.route("/getAllLocations", methods=["POST"])
-def get_all_locations():
+def get_all_locations() -> str:
     access_verification(request.headers)
 
     request_data = request.get_json() or {}
-    if not request.get_json():
+    if not request_data:
         abort(
             422,
             {
@@ -60,11 +60,11 @@ def get_all_locations():
 
 
 @geo_branch.route("/getAllServices", methods=["POST"])
-def get_all_services():
+def get_all_services() -> str:
     access_verification(request.headers)
 
     request_data = request.get_json() or {}
-    if not request.get_json():
+    if not request_data:
         abort(
             422,
             {
@@ -78,11 +78,11 @@ def get_all_services():
 
 
 @geo_branch.route("/getHouses", methods=["POST"])
-def get_houses():
+def get_houses() -> str:
     access_verification(request.headers)
 
     request_data = request.get_json() or {}
-    if not request.get_json():
+    if not request_data:
         abort(
             422,
             {
@@ -96,11 +96,11 @@ def get_houses():
 
 
 @geo_branch.route("/getServices", methods=["POST"])
-def get_services():
+def get_services() -> str:
     access_verification(request.headers)
 
     request_data = request.get_json() or {}
-    if not request.get_json():
+    if not request_data:
         abort(
             422,
             {
@@ -114,11 +114,11 @@ def get_services():
 
 
 @geo_branch.route("/getStreets", methods=["POST"])
-def get_streets():
+def get_streets() -> str:
     access_verification(request.headers)
 
     request_data = request.get_json() or {}
-    if not request.get_json():
+    if not request_data:
         abort(
             422,
             {

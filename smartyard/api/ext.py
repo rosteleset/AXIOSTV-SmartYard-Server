@@ -6,7 +6,7 @@ ext_branch = Blueprint("ext", __name__, url_prefix="/ext")
 
 
 @ext_branch.route("/ext", methods=["POST"])
-def ext():
+def ext() -> str:
     access_verification(request.headers)
 
     request_data = request.get_json() or {}
@@ -24,7 +24,7 @@ def ext():
 
 
 @ext_branch.route("/list", methods=["POST"])
-def list():
+def list() -> str:
     access_verification(request.headers)
 
     request_data = request.get_json()

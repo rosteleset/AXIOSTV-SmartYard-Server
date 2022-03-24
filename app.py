@@ -1,10 +1,12 @@
 #!bin/python
-import random, uuid, os, json, requests, binascii
+import random, uuid, os, json, requests, binascii, secrets, datetime, pytz
+from datetime import timedelta
 from random import randint
 from flask import Flask, jsonify, request, make_response, abort
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy import Column, Integer, String
+from sqlalchemy.dialects.postgresql import UUID, TIMESTAMP
 from sqlalchemy.sql import exists
 from dotenv import load_dotenv
 from requests.exceptions import HTTPError
@@ -28,6 +30,7 @@ migrate = Migrate(app, db)
 kannel_url = "http://%s:%d/cgi-bin/sendsms" % (os.getenv('KANNEL_HOST'), int(os.getenv('KANNEL_PORT')))
 kannel_params = (('user', os.getenv('KANNEL_USER')), ('pass', os.getenv('KANNEL_PASS')), ('from', os.getenv('KANNEL_FROM')), ('coding', '2'))
 billing_url=os.getenv('BILLING_URL')
+expire=int(os.getenv('EXPIRE'))
 
 class Temps(db.Model):
     __tablename__ = 'temps'
@@ -50,13 +53,19 @@ class Users(db.Model):
     name = db.Column(db.String(24))
     patronymic = db.Column(db.String(24))
     email = db.Column(db.String(60))
+    videotoken = db.Column(db.String(32))
+    vttime = db.Column(db.DateTime(timezone=False))
+    strims = db.Column(db.ARRAY(String(10)))
 
-    def __init__(self, uuid, userphone, name, patronymic, email):
+    def __init__(self, uuid, userphone, name, patronymic, email, videotoken, vttime, strims):
         self.uuid = uuid
         self.userphone = userphone
         self.name = name
         self.patronymic = patronymic
         self.email = email
+        self.videotoken = videotoken
+        self.vttime = vttime
+        self.strims = strims
 
     def __repr__(self):
         return f""
@@ -77,9 +86,33 @@ def json_verification(input_json):
         response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
         abort (422)
 
+def generate_video_token(userPhone,strims):
+    videotoken = secrets.token_hex(16)
+    db.session.query(Users).filter_by(userphone=int(userPhone)).update({'videotoken' : videotoken, 'vttime' : datetime.datetime.now(), 'strims' : strims})
+    db.session.commit()
+    return videotoken
+
 @app.route('/api/')
 def index():
     return "Hello, World!"
+
+@app.route('/api/accessfl', methods=['GET'])
+def accessfl():
+    global response
+    token = request.args.get('token')
+    if not token or token == '':
+        response = {'code':403,'name':'Forbidden','message':'Нет токена'}
+        abort (403)
+    name = request.args.get('name', 0)
+    extime = datetime.datetime.now() - timedelta(minutes=expire)
+    if db.session.query(db.exists().where(Users.videotoken==token)).scalar():
+        vttime = db.session.query(Users.vttime).filter_by(videotoken = token).first()[0]
+        strims = db.session.query(Users.strims).filter_by(videotoken = token).first()[0]
+        if vttime >= extime and name in strims:
+            response = app.response_class(status=200)
+            return response
+    response = {'code':403,'name':'Forbidden','message':'Не верный токен'}
+    abort (403)
 
 @app.route('/api/address/access', methods=['POST'])
 def address_access():
@@ -111,8 +144,8 @@ def address_access():
 @app.route('/api/address/getAddressList', methods=['POST'])
 def address_getAddressList():
     global response
-    access_verification(request.headers)
-    response = {'code':200,'name':'OK','message':'Хорошо','data':[{'houseId':'19260','address':'Тамбов, ул. Верховая, дом 17','hasPlog':'t','doors':[{'domophoneId':'343','doorId':0,'entrance':'1','icon':'entrance','name':'Подъезд'},{'domophoneId':'70','doorId':0,'entrance':'1','icon':'entrance','name':'Подъезд 1'},{'domophoneId':'124','doorId':0,'icon':'entrance','name':'Подъезд 2'}],'cctv':2},{'houseId':'6694','address':'Тамбов, ул. Пионерская, дом 5\'б\'','hasPlog':'t','doors':[{'domophoneId':'79','doorId':0,'entrance':'3','icon':'entrance','name':'Подъезд'},{'domophoneId':'75','doorId':0,'icon':'wicket','name':'Калитка'},{'domophoneId':'297','doorId':0,'icon':'wicket','name':'Калитка доп'},{'domophoneId':'131','doorId':0,'icon':'gate','name':'Ворота'}],'cctv':14}]}
+    response = requests.post(billing_url + "getaddresslist", headers={'Content-Type':'application/json'}, data=json.dumps({'phone': phone})).json()
+    #response = {'code':200,'name':'OK','message':'Хорошо','data':[{'houseId':'19260','address':'Тамбов, ул. Верховая, дом 17','hasPlog':'t','doors':[{'domophoneId':'343','doorId':0,'entrance':'1','icon':'entrance','name':'Подъезд'},{'domophoneId':'70','doorId':0,'entrance':'1','icon':'entrance','name':'Подъезд 1'},{'domophoneId':'124','doorId':0,'icon':'entrance','name':'Подъезд 2'}],'cctv':2},{'houseId':'6694','address':'Тамбов, ул. Пионерская, дом 5\'б\'','hasPlog':'t','doors':[{'domophoneId':'79','doorId':0,'entrance':'3','icon':'entrance','name':'Подъезд'},{'domophoneId':'75','doorId':0,'icon':'wicket','name':'Калитка'},{'domophoneId':'297','doorId':0,'icon':'wicket','name':'Калитка доп'},{'domophoneId':'131','doorId':0,'icon':'gate','name':'Ворота'}],'cctv':14}]}
     return jsonify(response)
 
 @app.route('/api/address/getSettingsList', methods=['POST'])
@@ -242,12 +275,16 @@ def address_resetCode():
 @app.route('/api/cctv/all', methods=['POST'])
 def cctv_all():
     global response
-    access_verification(request.headers)
+    phone = access_verification(request.headers)
     if not request.get_json():
         response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
         abort (422)
     request_data = request.get_json()
-    return "Hello, World!"
+    strims = ['111111', '222222', '333333']
+    videotoken = generate_video_token(phone,strims)
+    #print(f'Generate videotoken  {videotoken}!')
+    response = { "code": 200, "name": "OK", "message": "Хорошо", "data": [ { "id": 692, "name": "Пионерская 5б Вид сверху 2 - Тупик", "lat": "52.703267836456", "url": "https://vd.axiostv.ru/100001", "token": "a319639b20342a17c06aa51c12359f2a", "lon": "41.4726675977" }, { "id": 693, "name": "Пионерская 5б Вид сверху 3 - двор", "lat": "52.703500236158", "url": "https://fl2.lanta.me:8443/91165", "token": "3f627a87d2664f3176c3585cb9561b5a", "lon": "41.473222207278" }, { "id": 723, "name": "Домофон Пионерская 5 б п 1", "lat": "52.703248663394", "url": "https:\/\/fl2.lanta.me:8443\/89318", "token": "a319639b20342a17c06aa51c12359f2a", "lon": "41.473443133291" }, { "id": 694, "name": "Пионерская 5б Вид сверху 4 - парковка у ТП", "lat": "52.703443771131", "url": "https:\/\/fl2.lanta.me:8443\/91171", "token": "a319639b20342a17c06aa51c12359f2a", "lon": "41.473441666458" }, { "id": 724, "name": "Домофон Пионерская 5 б п 2", "lat": "52.703204679595", "url": "https:\/\/fl2.lanta.me:8443\/91071", "token": "a319639b20342a17c06aa51c12359f2a", "lon": "41.473222898785" }, { "id": 695, "name": "Пионерская 5б Въезд в тупик для чтения номеров", "lat": "52.703021201666", "url": "https:\/\/fl3.lanta.me:8443\/91172", "token": "a319639b20342a17c06aa51c12359f2a", "lon": "41.472768306267" }, { "id": 725, "name": "Домофон Пионерская 5 б п 3", "lat": "52.703178916547", "url": "https:\/\/fl2.lanta.me:8443\/91072", "token": "a319639b20342a17c06aa51c12359f2a", "lon": "41.472994973883" }, { "id": 696, "name": "Пионерская 5б Въезд во двор для чтения номеров", "lat": "52.703308087163", "url": "https:\/\/fl2.lanta.me:8443\/91174", "token": "a319639b20342a17c06aa51c12359f2a", "lon": "41.473656725138" }, { "id": 726, "name": "Домофон Пионерская 5 б п 4", "lat": "52.703346026911", "url": "https:\/\/fl2.lanta.me:8443\/91073", "token": "a319639b20342a17c06aa51c12359f2a", "lon": "41.472863964736" }, { "id": 697, "name": "Пионерская 5б Двор - вдоль проезда на север", "lat": "52.703443618763", "url": "https:\/\/fl2.lanta.me:8443\/91176", "token": "a319639b20342a17c06aa51c12359f2a", "lon": "41.4730289625" }, { "id": 727, "name": "Домофон Пионерская 5 б п 5", "lat": "52.703531471559", "url": "https:\/\/fl2.lanta.me:8443\/91074", "token": "a319639b20342a17c06aa51c12359f2a", "lon": "41.47279571509" }, { "id": 698, "name": "Пионерская 5б Двор - парковка у 5-го подъезда", "lat": "52.703597281681", "url": "https:\/\/fl2.lanta.me:8443\/91177", "token": "a319639b20342a17c06aa51c12359f2a", "lon": "41.472968256567" }, { "id": 728, "name": "Домофон Пионерская 5 б Калитка", "lat": "52.703142017842", "url": "https:\/\/fl2.lanta.me:8443\/91078", "token": "a319639b20342a17c06aa51c12359f2a", "lon": "41.473720762879" }, { "id": 699, "name": "Пионерская 5б Вид сверху 1 - Пионерская", "lat": "52.703042139774", "url": "https:\/\/fl2.lanta.me:8443\/89312", "token": "a319639b20342a17c06aa51c12359f2a", "lon": "41.473282892257"}]}
+    return jsonify(response)
 
 @app.route('/api/cctv/camMap', methods=['POST'])
 def cctv_camMap():
@@ -257,7 +294,7 @@ def cctv_camMap():
 #        response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
 #        abort (422)
 #    request_data = request.get_json()
-    response = {'code':200,'name':'OK','message':'Хорошо','data':[{'id':'70','url':'https:\/\/fl2.lanta.me:8443\/91052','token':'acd0c17657395ff3f69d68e74907bb3a','frs':'t'},{'id':'75','url':'https:\/\/fl2.lanta.me:8443\/91078','token':'acd0c17657395ff3f69d68e74907bb3a','frs':'t'},{'id':'79','url':'https:\/\/fl2.lanta.me:8443\/91072','token':'acd0c17657395ff3f69d68e74907bb3a','frs':'t'},{'id':'124','url':'https:\/\/fl2.lanta.me:8443\/95594','token':'acd0c17657395ff3f69d68e74907bb3a','frs':'t'},{'id':'131','url':'https:\/\/fl2.lanta.me:8443\/91174','token':'acd0c17657395ff3f69d68e74907bb3a','frs':'f'},{'id':'343','url':'https:\/\/fl2.lanta.me:8443\/90753','token':'acd0c17657395ff3f69d68e74907bb3a','frs':'t'}]}
+    response = {'code':200,'name':'OK','message':'Хорошо','data':[{'id':'70','url':'https://fl2.lanta.me:8443/91052','token':'acd0c17657395ff3f69d68e74907bb3a','frs':'t'},{'id':'75','url':'https://fl2.lanta.me:8443/91078','token':'acd0c17657395ff3f69d68e74907bb3a','frs':'t'},{'id':'79','url':'https://fl2.lanta.me:8443/91072','token':'acd0c17657395ff3f69d68e74907bb3a','frs':'t'},{'id':'124','url':'https://fl2.lanta.me:8443/95594','token':'acd0c17657395ff3f69d68e74907bb3a','frs':'t'},{'id':'131','url':'https://fl2.lanta.me:8443/91174','token':'acd0c17657395ff3f69d68e74907bb3a','frs':'f'},{'id':'343','url':'https://fl2.lanta.me:8443/90753','token':'acd0c17657395ff3f69d68e74907bb3a','frs':'t'}]}
     return jsonify(response)
 
 @app.route('/api/cctv/overview', methods=['POST'])
@@ -535,10 +572,9 @@ def pay_prepare():
     logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
     logging.debug(repr(request_data['clientId']))
     logging.debug(repr(request_data['amount']))
-    sub_response = requests.post(billing_url + "createinvoice", headers={'Content-Type':'application/json'}, data=json.dumps({'login': request_data['clientId'], 'amount' : request_data['amount'], 'phone' : phone})).json()
-    return jsonify(sub_response)
+    response = requests.post(billing_url + "createinvoice", headers={'Content-Type':'application/json'}, data=json.dumps({'login': request_data['clientId'], 'amount' : request_data['amount'], 'phone' : phone})).json()
     #response = {'code':200,'name':'OK','message':'Хорошо','data':'12350'}
-    #return jsonify(response)
+    return jsonify(response)
 
 @app.route('/api/pay/process', methods=['POST'])
 def pay_process():
@@ -644,7 +680,7 @@ def user_getPaymentsList():
     global response
     phone = access_verification(request.headers)
     response = requests.post(billing_url + "getlist", headers={'Content-Type':'application/json'}, data=json.dumps({'phone': phone})).json()
-    #response = {'code':200,'name':'OK','message':'Хорошо','data':[{'houseId':'19260','flatId':'136151','address':'Тамбов, ул. Верховая, дом 17, кв 1','accounts':[{'clientId':'91052','clientName':'Бивард-00011 (Чемодан 2)','contractName':'ФЛ-85973\/20','blocked':'f','balance':0,'bonus':0,'contractPayName':'85973','lcab':'https:\/\/lc.lanta.me\/?auth=Zjg1OTczOmY5NzkzNTQzM2U5YmQ5ZThkYTJiZmU2MWMwNDlkZGMy','lcabPay':'https:\/\/lc.lanta.me\/?auth=Zjg1OTczOmY5NzkzNTQzM2U5YmQ5ZThkYTJiZmU2MWMwNDlkZGMy','services':['internet','cctv','domophone']}]}]}
+    #response = {'code':200,'name':'OK','message':'Хорошо','data':[{'houseId':'19260','flatId':'136151','address':'Тамбов, ул. Верховая, дом 17, кв 1','accounts':[{'clientId':'91052','clientName':'Бивард-00011 (Чемодан 2)','contractName':'ФЛ-85973/20','blocked':'f','balance':0,'bonus':0,'contractPayName':'85973','lcab':'https:\/\/lc.lanta.me\/?auth=Zjg1OTczOmY5NzkzNTQzM2U5YmQ5ZThkYTJiZmU2MWMwNDlkZGMy','lcabPay':'https:\/\/lc.lanta.me\/?auth=Zjg1OTczOmY5NzkzNTQzM2U5YmQ5ZThkYTJiZmU2MWMwNDlkZGMy','services':['internet','cctv','domophone']}]}]}
     return jsonify(response)
 
 @app.route('/api/user/notification', methods=['POST'])
@@ -720,7 +756,7 @@ def user_requestCode():
     sms_text = os.getenv('KANNEL_TEXT') + str(sms_code)
     user_phone = int(request_data['userPhone'])
     temp_user = Temps(userphone=user_phone, smscode=sms_code)
-    #db.session.query(Temps).filter_by(userphone=int(user_phone)).delete()
+    db.session.query(Temps).filter_by(userphone=int(user_phone)).delete()#перед этим добавить проверку на время и ответ ошибкой!
     db.session.add(temp_user)
     db.session.commit()
     kannel_params2 = (('to', user_phone), ('text', sms_text.encode('utf-16-be').decode('utf-8').upper()))
@@ -791,8 +827,25 @@ def user_sendName():
 def user_getBillingList():
     global response
     phone = access_verification(request.headers)
-    sub_response = requests.post(billing_url + "getlist", headers={'Content-Type':'application/json'}, data=json.dumps({'phone': phone})).json()
-    return jsonify(sub_response)
+    response = requests.post(billing_url + "getlist", headers={'Content-Type':'application/json'}, data=json.dumps({'phone': phone})).json()
+    return jsonify(response)
+
+@app.route('/api/address/getHcsList', methods=['POST'])
+def address_getHcsList():
+    global response
+    access_verification(request.headers)
+    response = {'code':200,'name':'OK','message':'Хорошо','data':[{'houseId':'19260','address':'Липецк, ул. Катукова, дом 36 кв 18'},{'houseId':'6694','address':'Липецк, ул. Московская, дом 145 кв 3'}]}
+    #phone = "89103523377"
+    #logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
+    #logging.debug(repr(phone))
+    #sub_sub_response = {'login':'00001','address':'Липецк, ул. Московская, дом 151 кв 63'}
+    #sub_response2 = requests.post(billing_url, headers={'Content-Type':'application/json'}, data=json.dumps({'login': '00421'})).json()
+    #sub_sub_response2 = {'login':'00421','address':'Липецк, ул. Катукова, дом 36 кв 138'}
+    #response = {'code':200,'name':'OK','message':'Хорошо','data':[dict(list(sub_response.items()) + list(sub_sub_response.items())),dict(list(sub_response2.items()) + list(sub_sub_response2.items()))]}
+    #response = {'code':200,'name':'OK','message':'Хорошо','data':[{'login':'00001','address':'Липецк, ул. Катукова, дом 36 кв 138'},{'login':'00421','address':'Липецк, ул. Московская, дом 151 кв 63'}]}
+    ###response = {'code':204,'name':'OK','message':'Хорошо','data':[]}
+#    response = {'code':200,'name':'OK','message':'Хорошо',}
+    return jsonify(response)
 
 @app.errorhandler(401)
 def not_found(error):

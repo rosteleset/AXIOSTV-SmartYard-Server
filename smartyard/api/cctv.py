@@ -1,4 +1,4 @@
-from flask import Blueprint, abort, jsonify, request
+from flask import Blueprint, Response, abort, jsonify, request
 
 from smartyard.utils import access_verification
 
@@ -6,7 +6,7 @@ cctv_branch = Blueprint("cctv", __name__, url_prefix="/cctv")
 
 
 @cctv_branch.route("/all", methods=["POST"])
-def all():
+def all() -> str:
     access_verification(request.headers)
 
     request_data = request.get_json() or {}
@@ -24,7 +24,7 @@ def all():
 
 
 @cctv_branch.route("/camMap", methods=["POST"])
-def cam_map():
+def cam_map() -> Response:
     access_verification(request.headers)
     return jsonify(
         {
@@ -74,7 +74,7 @@ def cam_map():
 
 
 @cctv_branch.route("/overview", methods=["POST"])
-def overview():
+def overview() -> str:
     access_verification(request.headers)
 
     request_data = request.get_json() or {}
@@ -92,7 +92,7 @@ def overview():
 
 
 @cctv_branch.route("/recDownload", methods=["POST"])
-def rec_download():
+def rec_download() -> str:
     access_verification(request.headers)
 
     request_data = request.get_json() or {}
@@ -110,7 +110,7 @@ def rec_download():
 
 
 @cctv_branch.route("/recPrepare", methods=["POST"])
-def rec_prepare():
+def rec_prepare() -> str:
     access_verification(request.headers)
 
     request_data = request.get_json() or {}
@@ -128,7 +128,7 @@ def rec_prepare():
 
 
 @cctv_branch.route("/youtube", methods=["POST"])
-def youtube():
+def youtube() -> str:
     access_verification(request.headers)
 
     request_data = request.get_json() or {}

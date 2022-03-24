@@ -1,15 +1,13 @@
-import json
 import re
-from random import randint
 
-import requests
 from flask import Blueprint, Response, abort, current_app, jsonify, request
 
-from smartyard.db import Temps, create_db_connection
+from smartyard.db import create_db_connection
 from smartyard.exceptions import NotFoundCodeAndPhone, NotFoundCodesForPhone
 from smartyard.logic.users_bank import UsersBank
 from smartyard.proxy.kannel import Kannel
 from smartyard.utils import access_verification
+from smartyard.proxy.billing import Billing
 
 user_branch = Blueprint("user", __name__, url_prefix="/user")
 db = create_db_connection()
@@ -111,17 +109,11 @@ def confirm_code() -> Response:
             }
         )
 
-
 @user_branch.route("/getPaymentsList", methods=["POST"])
 def get_payments_list():
     phone = access_verification(request.headers)
     config = current_app.config["CONFIG"]
-    response = requests.post(
-        config.BILLING_URL + "getlist",
-        headers={"Content-Type": "application/json"},
-        data=json.dumps({"phone": phone}),
-    ).json()
-    return jsonify(response)
+    return jsonify(Billing(config.BILLING_URL).get_list(phone))
 
 
 @user_branch.route("/notification", methods=["POST"])
@@ -278,9 +270,4 @@ def send_name():
 def get_billing_list():
     phone = access_verification(request.headers)
     config = current_app.config["CONFIG"]
-    sub_response = requests.post(
-        config.BILLING_URL + "getlist",
-        headers={"Content-Type": "application/json"},
-        data=json.dumps({"phone": phone}),
-    ).json()
-    return jsonify(sub_response)
+    return jsonify(Billing(config.BILLING_URL).get_list(phone))

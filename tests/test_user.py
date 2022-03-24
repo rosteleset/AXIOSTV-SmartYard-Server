@@ -1,9 +1,7 @@
 import itertools
-import json
 import os
 
 import pytest
-import requests
 from flask import Flask
 from flask.testing import FlaskClient
 from pytest_mock import MockerFixture
@@ -13,6 +11,7 @@ from smartyard.config import Config, get_config
 from smartyard.exceptions import NotFoundCodeAndPhone, NotFoundCodesForPhone
 from smartyard.logic.users_bank import UsersBank
 from smartyard.proxy.kannel import Kannel
+from smartyard.proxy.billing import Billing
 
 
 @pytest.fixture
@@ -328,23 +327,8 @@ def test_confirm_code(client: FlaskClient, mocker: MockerFixture) -> None:
 def test_get_payments_list(
     client: FlaskClient, test_config: Config, mocker: MockerFixture
 ) -> None:
-    class Mock:
-        def __init__(self) -> None:
-            self.args = []
-            self.kwargs = {}
-
-        def __call__(self, *args, **kwargs):
-            self.args = args
-            self.kwargs = kwargs
-            return self
-
-        def json(self):
-            return {"response": "response"}
-
-    mock = Mock()
-
     mocker.patch.object(UsersBank, "search_by_uuid", return_value=(79001234567,))
-    mocker.patch.object(requests, "post", mock)
+    mocker.patch.object(Billing, "get_list", return_value={"response": "response"})
 
     response = client.post(
         "/api/user/getPaymentsList",
@@ -353,12 +337,7 @@ def test_get_payments_list(
 
     assert response.status_code == 200
     assert response.content_type == "application/json"
-    assert response.get_json() == mock.json()
-    assert mock.args == (test_config.BILLING_URL + "getlist",)
-    assert mock.kwargs == {
-        "headers": {"Content-Type": "application/json"},
-        "data": json.dumps({"phone": 79001234567}),
-    }
+    assert response.get_json() == {"response": "response"}
 
 
 def test_notification(client: FlaskClient, mocker: MockerFixture) -> None:
@@ -692,23 +671,8 @@ def test_send_name(
 def test_get_billing_list(
     client: FlaskClient, test_config: Config, mocker: MockerFixture
 ) -> None:
-    class Mock:
-        def __init__(self) -> None:
-            self.args = []
-            self.kwargs = {}
-
-        def __call__(self, *args, **kwargs):
-            self.args = args
-            self.kwargs = kwargs
-            return self
-
-        def json(self):
-            return {"response": "response"}
-
-    mock = Mock()
-
     mocker.patch.object(UsersBank, "search_by_uuid", return_value=(79001234567,))
-    mocker.patch.object(requests, "post", mock)
+    mocker.patch.object(Billing, "get_list", return_value={"response": "response"})
 
     response = client.post(
         "/api/user/getBillingList",
@@ -717,9 +681,4 @@ def test_get_billing_list(
 
     assert response.status_code == 200
     assert response.content_type == "application/json"
-    assert response.get_json() == mock.json()
-    assert mock.args == (test_config.BILLING_URL + "getlist",)
-    assert mock.kwargs == {
-        "headers": {"Content-Type": "application/json"},
-        "data": json.dumps({"phone": 79001234567}),
-    }
+    assert response.get_json() == {"response": "response"}

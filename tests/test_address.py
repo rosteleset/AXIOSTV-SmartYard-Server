@@ -1,9 +1,7 @@
 import itertools
-import json
 import os
 
 import pytest
-import requests
 from flask import Flask
 from flask.testing import FlaskClient
 from pytest_mock import MockerFixture
@@ -11,6 +9,7 @@ from pytest_mock import MockerFixture
 from smartyard import create_app
 from smartyard.config import Config, get_config
 from smartyard.logic.users_bank import UsersBank
+from smartyard.proxy.billing import Billing
 
 
 @pytest.fixture
@@ -84,38 +83,15 @@ def test_access_full_params(client: FlaskClient, mocker: MockerFixture) -> None:
 def test_get_address_list(
     client: FlaskClient, test_config: Config, mocker: MockerFixture
 ) -> None:
-    class Mock:
-        def __init__(self) -> None:
-            self.args = []
-            self.kwargs = {}
-
-        def __call__(self, *args, **kwargs):
-            self.args = args
-            self.kwargs = kwargs
-            return self
-
-        def json(self):
-            return {"response": "response"}
-
-    mock = Mock()
     mocker.patch.object(UsersBank, "search_by_uuid", return_value=(79001234567,))
-    mocker.patch.object(requests, "post", mock)
+    mocker.patch.object(Billing, "get_address_list", return_value={"response": "response"})
     response = client.post(
         "/api/address/getAddressList",
         headers={"Authorization": "auth"},
     )
     assert response.status_code == 200
     assert response.content_type == "application/json"
-    assert response.get_json() == mock.json()
-    assert mock.args == (test_config.BILLING_URL + "getaddresslist",)
-    assert mock.kwargs == {
-        "headers": {"Content-Type": "application/json"},
-        "data": json.dumps(
-            {
-                "phone": 79001234567,
-            }
-        ),
-    }
+    assert response.get_json() == {"response": "response"}
 
 
 def test_get_settings_list(client: FlaskClient, mocker: MockerFixture) -> None:

@@ -1,14 +1,13 @@
-import json
 import os
 
 import pytest
-import requests
 from flask import Flask
 from flask.testing import FlaskClient
 from pytest_mock import MockerFixture
 
 from smartyard import config, create_app
 from smartyard.logic.users_bank import UsersBank
+from smartyard.proxy.billing import Billing
 
 
 @pytest.fixture
@@ -36,23 +35,8 @@ def client(app) -> FlaskClient:
 def test_prepare(
     client: FlaskClient, test_config: config.Config, mocker: MockerFixture
 ) -> None:
-    class Mock:
-        def __init__(self) -> None:
-            self.args = []
-            self.kwargs = {}
-
-        def __call__(self, *args, **kwargs):
-            self.args = args
-            self.kwargs = kwargs
-            return self
-
-        def json(self):
-            return {"response": "response"}
-
-    mock = Mock()
-
     mocker.patch.object(UsersBank, "search_by_uuid", return_value=(79001234567,))
-    mocker.patch.object(requests, "post", mock)
+    mocker.patch.object(Billing, "create_invoice", return_value={"response": "response"})
 
     response = client.post(
         "/api/pay/prepare",
@@ -66,18 +50,7 @@ def test_prepare(
 
     assert response.status_code == 200
     assert response.content_type == "application/json"
-    assert response.get_json() == mock.json()
-    assert mock.args == (test_config.BILLING_URL + "createinvoice",)
-    assert mock.kwargs == {
-        "headers": {"Content-Type": "application/json"},
-        "data": json.dumps(
-            {
-                "login": "clientId",
-                "amount": "amount",
-                "phone": 79001234567,
-            }
-        ),
-    }
+    assert response.get_json() == {"response": "response"}
 
 
 def test_process(client: FlaskClient, mocker: MockerFixture) -> None:

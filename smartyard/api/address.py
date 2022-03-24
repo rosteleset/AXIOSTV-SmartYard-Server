@@ -1,10 +1,7 @@
-import json
-from distutils.command.config import config
-
-import requests
 from flask import Blueprint, Response, abort, current_app, jsonify, request
 
 from smartyard.utils import access_verification
+from smartyard.proxy.billing import Billing
 
 address_branch = Blueprint("address", __name__, url_prefix="/address")
 
@@ -36,12 +33,7 @@ def access() -> Response:
 def get_address_list() -> Response:
     phone = access_verification(request.headers)
     config = current_app.config["CONFIG"]
-    response = requests.post(
-        config.BILLING_URL + "getaddresslist",
-        headers={"Content-Type": "application/json"},
-        data=json.dumps({"phone": phone}),
-    ).json()
-    return jsonify(response)
+    return jsonify(Billing(config.BILLING_URL).get_address_list(phone))
 
 
 @address_branch.route("/getSettingsList", methods=["POST"])

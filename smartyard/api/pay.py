@@ -1,11 +1,10 @@
-import json
 import logging
 import sys
 
-import requests
 from flask import Blueprint, Response, abort, current_app, jsonify, request
 
 from smartyard.utils import access_verification
+from smartyard.proxy.billing import Billing
 
 pay_branch = Blueprint("pay", __name__, url_prefix="/pay")
 
@@ -30,19 +29,7 @@ def prepare() -> Response:
 
     config = current_app.config["CONFIG"]
 
-    sub_response = requests.post(
-        config.BILLING_URL + "createinvoice",
-        headers={"Content-Type": "application/json"},
-        data=json.dumps(
-            {
-                "login": request_data["clientId"],
-                "amount": request_data["amount"],
-                "phone": phone,
-            }
-        ),
-    ).json()
-
-    return jsonify(sub_response)
+    return jsonify(Billing(config.BILLING_URL).create_invoice(request_data["clientId"], request_data["amount"], phone))
 
 
 @pay_branch.route("/process", methods=["POST"])

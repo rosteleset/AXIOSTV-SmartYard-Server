@@ -2,7 +2,6 @@ import re
 
 from flask import Blueprint, Response, abort, current_app, jsonify, request
 
-from smartyard.db import create_db_connection
 from smartyard.exceptions import NotFoundCodeAndPhone, NotFoundCodesForPhone
 from smartyard.logic.users_bank import UsersBank
 from smartyard.proxy.kannel import Kannel
@@ -10,7 +9,6 @@ from smartyard.utils import access_verification
 from smartyard.proxy.billing import Billing
 
 user_branch = Blueprint("user", __name__, url_prefix="/user")
-db = create_db_connection()
 
 
 @user_branch.route("/addMyPhone", methods=["POST"])

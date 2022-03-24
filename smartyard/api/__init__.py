@@ -1,6 +1,5 @@
 import json
-
-from flask import Blueprint, Response, jsonify, make_response
+from flask import Blueprint, Response
 
 from .address import address_branch
 from .cctv import cctv_branch
@@ -35,7 +34,7 @@ for branch in {
 
 
 @api.errorhandler(401)
-def not_found(error):
+def unauthorized(error) -> Response:
     return Response(
         response=json.dumps(error.description),
         status=401,
@@ -44,7 +43,7 @@ def not_found(error):
 
 
 @api.errorhandler(403)
-def not_found(error):
+def forbidden(error):
     return Response(
         response=json.dumps(error.description),
         status=403,
@@ -62,7 +61,7 @@ def not_found(error):
 
 
 @api.errorhandler(410)
-def not_found(error):
+def gone(error):
     return Response(
         response=json.dumps({"error": "авторизация отозвана"}),
         status=410,
@@ -71,7 +70,7 @@ def not_found(error):
 
 
 @api.errorhandler(422)
-def not_found(error):
+def unprocessable_entity(error):
     return Response(
         response=json.dumps(error.description),
         status=422,
@@ -80,7 +79,7 @@ def not_found(error):
 
 
 @api.errorhandler(424)
-def not_found(error):
+def failed_dependency(error):
     return Response(
         response=json.dumps({"error": "неверный токен"}),
         status=424,
@@ -89,7 +88,7 @@ def not_found(error):
 
 
 @api.errorhandler(429)
-def not_found(error):
+def too_many_requests(error):
     return Response(
         response=json.dumps(
             {

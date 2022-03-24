@@ -6,7 +6,7 @@ frs_branch = Blueprint("frs", __name__, url_prefix="/frs")
 
 
 @frs_branch.route("/disLike", methods=["POST"])
-def dis_like():
+def dislike() -> str:
     access_verification(request.headers)
 
     request_data = request.get_json() or {}
@@ -24,7 +24,7 @@ def dis_like():
 
 
 @frs_branch.route("/like", methods=["POST"])
-def like():
+def like() -> str:
     access_verification(request.headers)
 
     request_data = request.get_json() or {}
@@ -42,7 +42,7 @@ def like():
 
 
 @frs_branch.route("/listFaces", methods=["POST"])
-def listFaces():
+def list_faces() -> str:
     access_verification(request.headers)
 
     request_data = request.get_json() or {}

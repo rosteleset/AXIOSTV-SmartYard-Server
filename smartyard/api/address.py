@@ -1,4 +1,8 @@
-from flask import Blueprint, Response, abort, jsonify, request
+import json
+from distutils.command.config import config
+
+import requests
+from flask import Blueprint, Response, abort, current_app, jsonify, request
 
 from smartyard.utils import access_verification
 
@@ -30,77 +34,14 @@ def access() -> Response:
 
 @address_branch.route("/getAddressList", methods=["POST"])
 def get_address_list() -> Response:
-    access_verification(request.headers)
-    return jsonify(
-        {
-            "code": 200,
-            "name": "OK",
-            "message": "Хорошо",
-            "data": [
-                {
-                    "houseId": "19260",
-                    "address": "Тамбов, ул. Верховая, дом 17",
-                    "hasPlog": "t",
-                    "doors": [
-                        {
-                            "domophoneId": "343",
-                            "doorId": 0,
-                            "entrance": "1",
-                            "icon": "entrance",
-                            "name": "Подъезд",
-                        },
-                        {
-                            "domophoneId": "70",
-                            "doorId": 0,
-                            "entrance": "1",
-                            "icon": "entrance",
-                            "name": "Подъезд 1",
-                        },
-                        {
-                            "domophoneId": "124",
-                            "doorId": 0,
-                            "icon": "entrance",
-                            "name": "Подъезд 2",
-                        },
-                    ],
-                    "cctv": 2,
-                },
-                {
-                    "houseId": "6694",
-                    "address": "Тамбов, ул. Пионерская, дом 5'б'",
-                    "hasPlog": "t",
-                    "doors": [
-                        {
-                            "domophoneId": "79",
-                            "doorId": 0,
-                            "entrance": "3",
-                            "icon": "entrance",
-                            "name": "Подъезд",
-                        },
-                        {
-                            "domophoneId": "75",
-                            "doorId": 0,
-                            "icon": "wicket",
-                            "name": "Калитка",
-                        },
-                        {
-                            "domophoneId": "297",
-                            "doorId": 0,
-                            "icon": "wicket",
-                            "name": "Калитка доп",
-                        },
-                        {
-                            "domophoneId": "131",
-                            "doorId": 0,
-                            "icon": "gate",
-                            "name": "Ворота",
-                        },
-                    ],
-                    "cctv": 14,
-                },
-            ],
-        }
-    )
+    phone = access_verification(request.headers)
+    config = current_app.config["CONFIG"]
+    response = requests.post(
+        config.BILLING_URL + "getaddresslist",
+        headers={"Content-Type": "application/json"},
+        data=json.dumps({"phone": phone}),
+    ).json()
+    return jsonify(response)
 
 
 @address_branch.route("/getSettingsList", methods=["POST"])
@@ -672,3 +613,19 @@ def reset_code() -> str:
         )
 
     return "Hello, World!"
+
+
+@address_branch.route("/getHcsList", methods=["POST"])
+def get_hcs_list():
+    access_verification(request.headers)
+    return jsonify(
+        {
+            "code": 200,
+            "name": "OK",
+            "message": "Хорошо",
+            "data": [
+                {"houseId": "19260", "address": "Липецк, ул. Катукова, дом 36 кв 18"},
+                {"houseId": "6694", "address": "Липецк, ул. Московская, дом 145 кв 3"},
+            ],
+        }
+    )

@@ -48,6 +48,7 @@ endpoints = {
     ("post", "/api/address/registerQR"),
     ("post", "/api/address/resend"),
     ("post", "/api/address/resetCode"),
+    ("post", "/api/address/getHcsList"),
     ("post", "/api/cctv/all"),
     ("post", "/api/cctv/camMap"),
     ("post", "/api/cctv/overview"),

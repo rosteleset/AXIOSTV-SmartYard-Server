@@ -1,5 +1,7 @@
 import uuid
+from datetime import datetime
 from random import randint
+from typing import Iterable
 
 from smartyard.db import Temps, Users, create_db_connection
 from smartyard.exceptions import NotFoundCodeAndPhone, NotFoundCodesForPhone
@@ -52,5 +54,19 @@ class UsersBank:
         sms_code = randint(1000, 9999)
         user_phone = user_phone
         temp_user = Temps(userphone=user_phone, smscode=sms_code)
+        db.session.query(Temps).filter_by(
+            userphone=int(user_phone)
+        ).delete()  # перед этим добавить проверку на время и ответ ошибкой!
         db.session.add(temp_user)
         db.session.commit()
+
+    def update_video_token(self, user_phone: int, token: str, strims: Iterable):
+        db = create_db_connection()
+        db.session.query(Users).filter_by(userphone=int(user_phone)).update(
+            {"videotoken": token, "vttime": datetime.now(), "strims": strims}
+        )
+        db.session.commit()
+
+    def get_users_by_videotoken(self, token: str):
+        db = create_db_connection()
+        return db.session.query(Users).where(Users.videotoken == token)

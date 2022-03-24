@@ -33,6 +33,7 @@ def client(app) -> FlaskClient:
 
 def test_all(client: FlaskClient, mocker: MockerFixture) -> None:
     mocker.patch.object(UsersBank, "search_by_uuid", return_value=(79001234567,))
+    mocker.patch.object(UsersBank, "update_video_token", return_value=None)
     response = client.post(
         "/api/cctv/all",
         headers={"Authorization": "auth"},
@@ -40,6 +41,8 @@ def test_all(client: FlaskClient, mocker: MockerFixture) -> None:
         content_type="application/json",
     )
     assert response.status_code == 200
+    assert response.content_type == "application/json"
+    assert response.get_json()
 
 
 def test_cam_map(client: FlaskClient, mocker: MockerFixture) -> None:

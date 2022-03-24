@@ -1,13 +1,15 @@
 import itertools
+import json
 import os
 
 import pytest
+import requests
 from flask import Flask
 from flask.testing import FlaskClient
 from pytest_mock import MockerFixture
 
 from smartyard import create_app
-from smartyard.config import get_config
+from smartyard.config import Config, get_config
 from smartyard.logic.users_bank import UsersBank
 
 
@@ -17,8 +19,13 @@ def env_file() -> str:
 
 
 @pytest.fixture
-def app(env_file) -> Flask:
-    app, _ = create_app(get_config(env_file))
+def test_config(env_file: str) -> Config:
+    return get_config(env_file)
+
+
+@pytest.fixture
+def app(test_config) -> Flask:
+    app, _ = create_app(test_config)
     app.config.update(
         {
             "TESTING": True,
@@ -74,15 +81,41 @@ def test_access_full_params(client: FlaskClient, mocker: MockerFixture) -> None:
     assert response.content_type == "application/json"
 
 
-def test_get_address_list(client: FlaskClient, mocker: MockerFixture) -> None:
+def test_get_address_list(
+    client: FlaskClient, test_config: Config, mocker: MockerFixture
+) -> None:
+    class Mock:
+        def __init__(self) -> None:
+            self.args = []
+            self.kwargs = {}
+
+        def __call__(self, *args, **kwargs):
+            self.args = args
+            self.kwargs = kwargs
+            return self
+
+        def json(self):
+            return {"response": "response"}
+
+    mock = Mock()
     mocker.patch.object(UsersBank, "search_by_uuid", return_value=(79001234567,))
+    mocker.patch.object(requests, "post", mock)
     response = client.post(
         "/api/address/getAddressList",
         headers={"Authorization": "auth"},
     )
     assert response.status_code == 200
     assert response.content_type == "application/json"
-    assert response.get_json()
+    assert response.get_json() == mock.json()
+    assert mock.args == (test_config.BILLING_URL + "getaddresslist",)
+    assert mock.kwargs == {
+        "headers": {"Content-Type": "application/json"},
+        "data": json.dumps(
+            {
+                "phone": 79001234567,
+            }
+        ),
+    }
 
 
 def test_get_settings_list(client: FlaskClient, mocker: MockerFixture) -> None:
@@ -282,3 +315,16 @@ def test_reset_code(client: FlaskClient, mocker: MockerFixture) -> None:
         content_type="application/json",
     )
     assert response.status_code == 200
+
+
+def test_get_hcs_list(client: FlaskClient, mocker: MockerFixture) -> None:
+    mocker.patch.object(UsersBank, "search_by_uuid", return_value=(79001234567,))
+    response = client.post(
+        "/api/address/getHcsList",
+        headers={"Authorization": "auth"},
+        json={},
+        content_type="application/json",
+    )
+    assert response.status_code == 200
+    assert response.content_type == "application/json"
+    assert response.get_json()

@@ -10,6 +10,7 @@ from .geo import geo_branch
 from .inbox import inbox_branch
 from .issues import issues_branch
 from .pay import pay_branch
+from .root import root_branch
 from .sip import sip_branch
 from .user import user_branch
 
@@ -18,6 +19,7 @@ __all__ = ["api"]
 api = Blueprint("api", __name__, url_prefix="/api")
 
 for branch in {
+    root_branch,
     address_branch,
     cctv_branch,
     ext_branch,
@@ -30,11 +32,6 @@ for branch in {
     user_branch,
 }:
     api.register_blueprint(branch)
-
-
-@api.route("/")
-def index():
-    return "Hello, World!"
 
 
 @api.errorhandler(401)

@@ -1,3 +1,6 @@
+import secrets
+from typing import Iterable
+
 from flask import abort
 
 from smartyard.logic.users_bank import UsersBank
@@ -30,3 +33,9 @@ def json_verification(input_json):
                 "message": "Необрабатываемый экземпляр",
             },
         )
+
+
+def generate_video_token(user_phone: int, strims: Iterable) -> str:
+    token = secrets.token_hex(16)
+    UsersBank().update_video_token(user_phone, token, strims)
+    return token

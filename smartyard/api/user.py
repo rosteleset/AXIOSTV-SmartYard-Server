@@ -1,13 +1,14 @@
 import json
-import uuid
+import re
 from random import randint
 
 import requests
-from flask import Blueprint, Response, abort, jsonify, request
-from requests.exceptions import HTTPError
+from flask import Blueprint, Response, abort, current_app, jsonify, request
 
-from smartyard.config import get_config
-from smartyard.db import Temps, Users, create_db_connection
+from smartyard.db import Temps, create_db_connection
+from smartyard.exceptions import NotFoundCodeAndPhone, NotFoundCodesForPhone
+from smartyard.logic.users_bank import UsersBank
+from smartyard.proxy.kannel import Kannel
 from smartyard.utils import access_verification
 
 user_branch = Blueprint("user", __name__, url_prefix="/user")
@@ -15,7 +16,7 @@ db = create_db_connection()
 
 
 @user_branch.route("/addMyPhone", methods=["POST"])
-def add_my_phone():
+def add_my_phone() -> Response:
     access_verification(request.headers)
 
     request_data = request.get_json() or {}
@@ -38,17 +39,13 @@ def add_my_phone():
 
 
 @user_branch.route("/appVersion", methods=["POST"])
-def app_version():
+def app_version() -> Response:
     access_verification(request.headers)
     request_data = request.get_json() or {}
     version = request_data.get("version")
     platform = request_data.get("platform")
 
-    if version and platform and (platform == "android" or platform == "ios"):
-        return jsonify(
-            {"code": 200, "name": "OK", "message": "Хорошо", "data": "upgrade"}
-        )
-    else:
+    if not version or not platform or platform not in ("android", "ios"):
         abort(
             422,
             {
@@ -57,15 +54,19 @@ def app_version():
                 "message": "Необрабатываемый экземпляр",
             },
         )
+    return jsonify({"code": 200, "name": "OK", "message": "Хорошо", "data": "upgrade"})
 
 
 @user_branch.route("/confirmCode", methods=["POST"])
-def confirm_code():
+def confirm_code() -> Response:
     request_data = request.get_json() or {}
-    userPhone = request_data.get("userPhone", "")
-    smsCode = request_data.get("smsCode", "")
+    user_phone = request_data.get("userPhone", "")
+    sms_code = request_data.get("smsCode", "")
+    name = request_data.get("name")
+    patronymic = request_data.get("patronymic")
+    email = request_data.get("email")
 
-    if len(userPhone) != 11 or len(smsCode) != 4:
+    if not re.match(r"^\d{11}$", user_phone) or not re.match(r"^\d{4}$", sms_code):
         abort(
             422,
             {
@@ -75,16 +76,17 @@ def confirm_code():
             },
         )
 
-    if not db.session.query(
-        db.session.query(Temps).filter_by(userphone=int(userPhone)).exists()
-    ).scalar():
-        abort(404, {"code": 404, "name": "Not Found", "message": "Не найдено"})
-
-    if not db.session.query(
-        db.exists().where(
-            Temps.userphone == int(userPhone) and Temps.smscode == int(smsCode)
+    try:
+        access_token = UsersBank.save_user(
+            user_phone=int(user_phone),
+            sms_code=int(sms_code),
+            name=name,
+            patronymic=patronymic,
+            email=email,
         )
-    ).scalar():
+    except NotFoundCodesForPhone:
+        abort(404, {"code": 404, "name": "Not Found", "message": "Не найдено"})
+    except NotFoundCodeAndPhone:
         abort(
             403,
             {
@@ -93,51 +95,27 @@ def confirm_code():
                 "message": "Пин-код введен неверно",
             },
         )
-
-    accessToken = str(uuid.uuid4())
-    if not "name" in request_data:
-        request_data["name"] = None
-    if not "patronymic" in request_data:
-        request_data["patronymic"] = None
-    if not "email" in request_data:
-        request_data["email"] = None
-    if db.session.query(
-        db.session.query(Users).filter_by(userphone=int(userPhone)).exists()
-    ).scalar():
-        db.session.query(Users).filter_by(userphone=int(userPhone)).update(
-            {"uuid": accessToken}
-        )
     else:
-        new_user = Users(
-            uuid=accessToken,
-            userphone=int(request_data["userPhone"]),
-            name=request_data["name"],
-            patronymic=request_data["patronymic"],
-            email=request_data["email"],
-        )
-        db.session.add(new_user)
-    db.session.query(Temps).filter_by(userphone=int(userPhone)).delete()
-    db.session.commit()
-    return jsonify(
-        {
-            "code": 200,
-            "name": "OK",
-            "message": "Хорошо",
-            "data": {
-                "accessToken": accessToken,
-                "names": {
-                    "name": request_data["name"],
-                    "patronymic": request_data["patronymic"],
+        return jsonify(
+            {
+                "code": 200,
+                "name": "OK",
+                "message": "Хорошо",
+                "data": {
+                    "accessToken": access_token,
+                    "names": {
+                        "name": name,
+                        "patronymic": patronymic,
+                    },
                 },
-            },
-        }
-    )
+            }
+        )
 
 
 @user_branch.route("/getPaymentsList", methods=["POST"])
 def get_payments_list():
     phone = access_verification(request.headers)
-    config = get_config()
+    config = current_app.config["CONFIG"]
     response = requests.post(
         config.BILLING_URL + "getlist",
         headers={"Content-Type": "application/json"},
@@ -189,6 +167,10 @@ def register_push_token():
 
     request_data = request.get_json() or {}
     platform = request_data.get("platform")
+    pushToken = request_data.get("pushToken")
+    voipToken = request_data.get("voipToken")
+    production = request_data.get("production")
+
     if not platform:
         abort(
             422,
@@ -199,10 +181,6 @@ def register_push_token():
             },
         )
 
-    pushToken = request_data.get("pushToken")
-    voipToken = request_data.get("voipToken")
-    production = request_data.get("production")
-
     return Response(status=204, mimetype="application/json")
 
 
@@ -210,7 +188,7 @@ def register_push_token():
 def request_code():
     request_data = request.get_json() or {}
     user_phone = request_data.get("userPhone", "")
-    if len(user_phone) != 11:
+    if not re.match(r"^\d{11}$", user_phone):
         abort(
             422,
             {
@@ -219,39 +197,8 @@ def request_code():
                 "message": "Необрабатываемый экземпляр",
             },
         )
-
-    config = get_config()
-    sms_code = int(
-        str(randint(1, 9))
-        + str(randint(0, 9))
-        + str(randint(0, 9))
-        + str(randint(0, 9))
-    )
-    sms_text = f"{config.KANNEL_TEXT}{sms_code}"
-    user_phone = int(user_phone)
-    temp_user = Temps(userphone=user_phone, smscode=sms_code)
-    db.session.add(temp_user)
-    db.session.commit()
-
-    try:
-        response = requests.get(
-            url=f"http://{config.KANNEL_HOST}:{config.KANNEL_PORT}/{config.KANNEL_PATH}",
-            params=(
-                ("user", config.KANNEL_USER),
-                ("pass", config.KANNEL_PASS),
-                ("from", config.KANNEL_FROM),
-                ("coding", config.KANNEL_CODING),
-                ("to", user_phone),
-                ("text", sms_text.encode("utf-16-be").decode("utf-8").upper()),
-            ),
-        )
-        response.raise_for_status()
-    except HTTPError as http_err:
-        print(f"HTTP error occurred: {http_err}")
-    except Exception as err:
-        print(f"Other error occurred: {err}")
-    else:
-        print(f"Success send sms to {user_phone} and text {sms_text}!")
+    sms_code = UsersBank().generate_code(int(user_phone))
+    Kannel(current_app.config["CONFIG"]).send_code(sms_code)
 
     return Response(status=204, mimetype="application/json")
 
@@ -261,6 +208,8 @@ def restore():
     access_verification(request.headers)
     request_data = request.get_json() or {}
     contract = request_data.get("contract")
+    comment = request_data.get("comment")
+    notification = request_data.get("notification")
     if not contract:
         abort(
             422,
@@ -273,7 +222,7 @@ def restore():
 
     contact_id = request_data.get("contactId")
     code = request_data.get("code")
-    if not (contact_id and code):
+    if not contact_id and not code:
         return jsonify(
             {
                 "code": 200,
@@ -302,8 +251,8 @@ def restore():
             return Response(status=204, mimetype="application/json")
         else:
             abort(403, {"code": 403, "name": "Forbidden", "message": "Запрещено"})
-    comment = request_data.get("comment")
-    notification = request_data.get("notification")
+    # TODO: Нужен вариант по умлочанию: пока такой
+    return Response(status=204, mimetype="application/json")
 
 
 @user_branch.route("/sendName", methods=["POST"])
@@ -311,6 +260,7 @@ def send_name():
     access_verification(request.headers)
     request_data = request.get_json() or {}
     name = request_data.get("name")
+    patronymic = request_data.get("patronymic")
 
     if not name:
         abort(
@@ -321,15 +271,13 @@ def send_name():
                 "message": "Необрабатываемый экземпляр",
             },
         )
-    if not "patronymic" in request_data:
-        request_data["patronymic"] = None
     return Response(status=204, mimetype="application/json")
 
 
 @user_branch.route("/getBillingList", methods=["POST"])
 def get_billing_list():
     phone = access_verification(request.headers)
-    config = get_config()
+    config = current_app.config["CONFIG"]
     sub_response = requests.post(
         config.BILLING_URL + "getlist",
         headers={"Content-Type": "application/json"},

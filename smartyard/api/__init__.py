@@ -58,8 +58,8 @@ def not_found(error):
 @api.errorhandler(404)
 def not_found(error):
     return Response(
-        response=json.dumps({"error": "пользователь не найден"}),
-        status=403,
+        response=json.dumps(error.description),
+        status=404,
         content_type="application/json",
     )
 

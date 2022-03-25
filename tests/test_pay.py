@@ -36,7 +36,9 @@ def test_prepare(
     client: FlaskClient, test_config: config.Config, mocker: MockerFixture
 ) -> None:
     mocker.patch.object(UsersBank, "search_by_uuid", return_value=(79001234567,))
-    mocker.patch.object(Billing, "create_invoice", return_value={"response": "response"})
+    mocker.patch.object(
+        Billing, "create_invoice", return_value={"response": "response"}
+    )
 
     response = client.post(
         "/api/pay/prepare",

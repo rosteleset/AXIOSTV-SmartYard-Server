@@ -4,44 +4,35 @@ from flask import Blueprint, Response, abort, current_app, jsonify, request
 
 from smartyard.exceptions import NotFoundCodeAndPhone, NotFoundCodesForPhone
 from smartyard.logic.users_bank import UsersBank
-from smartyard.proxy.kannel import Kannel
-from smartyard.utils import access_verification
 from smartyard.proxy.billing import Billing
+from smartyard.proxy.kannel import Kannel
+from smartyard.utils import access_verification, json_verification
 
 user_branch = Blueprint("user", __name__, url_prefix="/user")
 
 
 @user_branch.route("/addMyPhone", methods=["POST"])
+@access_verification
+@json_verification(("login", "password"))
 def add_my_phone() -> Response:
-    access_verification(request.headers)
-
     request_data = request.get_json() or {}
     login = request_data.get("login")
     password = request_data.get("password")
     comment = request_data.get("comment", "")
     notification = request_data.get("notification", "")
 
-    if not login or not password:
-        abort(
-            422,
-            {
-                "code": 422,
-                "name": "Unprocessable Entity",
-                "message": "Необрабатываемый экземпляр",
-            },
-        )
-
     return Response(status=204, mimetype="application/json")
 
 
 @user_branch.route("/appVersion", methods=["POST"])
+@access_verification
+@json_verification(("version", "platform"))
 def app_version() -> Response:
-    access_verification(request.headers)
     request_data = request.get_json() or {}
     version = request_data.get("version")
     platform = request_data.get("platform")
 
-    if not version or not platform or platform not in ("android", "ios"):
+    if platform not in ("android", "ios"):
         abort(
             422,
             {
@@ -54,6 +45,7 @@ def app_version() -> Response:
 
 
 @user_branch.route("/confirmCode", methods=["POST"])
+@json_verification(("userPhone",))
 def confirm_code() -> Response:
     request_data = request.get_json() or {}
     user_phone = request_data.get("userPhone", "")
@@ -107,16 +99,17 @@ def confirm_code() -> Response:
             }
         )
 
+
 @user_branch.route("/getPaymentsList", methods=["POST"])
+@access_verification
 def get_payments_list():
-    phone = access_verification(request.headers)
     config = current_app.config["CONFIG"]
-    return jsonify(Billing(config.BILLING_URL).get_list(phone))
+    return jsonify(Billing(config.BILLING_URL).get_list(request.environ["USER_PHONE"]))
 
 
 @user_branch.route("/notification", methods=["POST"])
+@access_verification
 def notification():
-    access_verification(request.headers)
     money = "t"
     enable = "t"
     return jsonify(
@@ -130,14 +123,14 @@ def notification():
 
 
 @user_branch.route("/ping", methods=["POST"])
+@access_verification
 def ping():
-    access_verification(request.headers)
     return Response(status=204, mimetype="application/json")
 
 
 @user_branch.route("/pushTokens", methods=["POST"])
+@access_verification
 def push_tokens():
-    access_verification(request.headers)
     return jsonify(
         {
             "code": 200,
@@ -152,29 +145,20 @@ def push_tokens():
 
 
 @user_branch.route("/registerPushToken", methods=["POST"])
+@access_verification
+@json_verification(("platform",))
 def register_push_token():
-    access_verification(request.headers)
-
     request_data = request.get_json() or {}
     platform = request_data.get("platform")
     pushToken = request_data.get("pushToken")
     voipToken = request_data.get("voipToken")
     production = request_data.get("production")
 
-    if not platform:
-        abort(
-            422,
-            {
-                "code": 422,
-                "name": "Unprocessable Entity",
-                "message": "Необрабатываемый экземпляр",
-            },
-        )
-
     return Response(status=204, mimetype="application/json")
 
 
 @user_branch.route("/requestCode", methods=["POST"])
+@json_verification(("userPhone",))
 def request_code():
     request_data = request.get_json() or {}
     user_phone = request_data.get("userPhone", "")
@@ -194,24 +178,16 @@ def request_code():
 
 
 @user_branch.route("/restore", methods=["POST"])
+@access_verification
+@json_verification(("contract",))
 def restore():
-    access_verification(request.headers)
     request_data = request.get_json() or {}
     contract = request_data.get("contract")
     comment = request_data.get("comment")
     notification = request_data.get("notification")
-    if not contract:
-        abort(
-            422,
-            {
-                "code": 422,
-                "name": "Unprocessable Entity",
-                "message": "Необрабатываемый экземпляр",
-            },
-        )
-
     contact_id = request_data.get("contactId")
     code = request_data.get("code")
+
     if not contact_id and not code:
         return jsonify(
             {
@@ -246,26 +222,17 @@ def restore():
 
 
 @user_branch.route("/sendName", methods=["POST"])
+@access_verification
+@json_verification(("name",))
 def send_name():
-    access_verification(request.headers)
     request_data = request.get_json() or {}
     name = request_data.get("name")
     patronymic = request_data.get("patronymic")
-
-    if not name:
-        abort(
-            422,
-            {
-                "code": 422,
-                "name": "Unprocessable Entity",
-                "message": "Необрабатываемый экземпляр",
-            },
-        )
     return Response(status=204, mimetype="application/json")
 
 
 @user_branch.route("/getBillingList", methods=["POST"])
+@access_verification
 def get_billing_list():
-    phone = access_verification(request.headers)
     config = current_app.config["CONFIG"]
-    return jsonify(Billing(config.BILLING_URL).get_list(phone))
+    return jsonify(Billing(config.BILLING_URL).get_list(request.environ["USER_PHONE"]))

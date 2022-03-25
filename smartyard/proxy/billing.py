@@ -1,5 +1,7 @@
 import json
+
 import requests
+
 
 class Billing:
     def __init__(self, url: str) -> None:

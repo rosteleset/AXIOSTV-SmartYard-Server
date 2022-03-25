@@ -1,131 +1,54 @@
-from flask import Blueprint, abort, request
+from flask import Blueprint
 
-from smartyard.utils import access_verification
+from smartyard.utils import access_verification, json_verification
 
 geo_branch = Blueprint("geo", __name__, url_prefix="/geo")
 
 
 @geo_branch.route("/address", methods=["POST"])
+@access_verification
+@json_verification
 def address() -> str:
-    access_verification(request.headers)
-
-    request_data = request.get_json() or {}
-    if not request_data:
-        abort(
-            422,
-            {
-                "code": 422,
-                "name": "Unprocessable Entity",
-                "message": "Необрабатываемый экземпляр",
-            },
-        )
-
     return "Hello, World!"
 
 
 @geo_branch.route("/coder", methods=["POST"])
+@access_verification
+@json_verification
 def coder() -> str:
-    access_verification(request.headers)
-
-    request_data = request.get_json() or {}
-    if not request_data:
-        abort(
-            422,
-            {
-                "code": 422,
-                "name": "Unprocessable Entity",
-                "message": "Необрабатываемый экземпляр",
-            },
-        )
-
     return "Hello, World!"
 
 
 @geo_branch.route("/getAllLocations", methods=["POST"])
+@access_verification
+@json_verification
 def get_all_locations() -> str:
-    access_verification(request.headers)
-
-    request_data = request.get_json() or {}
-    if not request_data:
-        abort(
-            422,
-            {
-                "code": 422,
-                "name": "Unprocessable Entity",
-                "message": "Необрабатываемый экземпляр",
-            },
-        )
-
     return "Hello, World!"
 
 
 @geo_branch.route("/getAllServices", methods=["POST"])
+@access_verification
+@json_verification
 def get_all_services() -> str:
-    access_verification(request.headers)
-
-    request_data = request.get_json() or {}
-    if not request_data:
-        abort(
-            422,
-            {
-                "code": 422,
-                "name": "Unprocessable Entity",
-                "message": "Необрабатываемый экземпляр",
-            },
-        )
-
     return "Hello, World!"
 
 
 @geo_branch.route("/getHouses", methods=["POST"])
+@access_verification
+@json_verification
 def get_houses() -> str:
-    access_verification(request.headers)
-
-    request_data = request.get_json() or {}
-    if not request_data:
-        abort(
-            422,
-            {
-                "code": 422,
-                "name": "Unprocessable Entity",
-                "message": "Необрабатываемый экземпляр",
-            },
-        )
-
     return "Hello, World!"
 
 
 @geo_branch.route("/getServices", methods=["POST"])
+@access_verification
+@json_verification
 def get_services() -> str:
-    access_verification(request.headers)
-
-    request_data = request.get_json() or {}
-    if not request_data:
-        abort(
-            422,
-            {
-                "code": 422,
-                "name": "Unprocessable Entity",
-                "message": "Необрабатываемый экземпляр",
-            },
-        )
-
     return "Hello, World!"
 
 
 @geo_branch.route("/getStreets", methods=["POST"])
+@access_verification
+@json_verification
 def get_streets() -> str:
-    access_verification(request.headers)
-
-    request_data = request.get_json() or {}
-    if not request_data:
-        abort(
-            422,
-            {
-                "code": 422,
-                "name": "Unprocessable Entity",
-                "message": "Необрабатываемый экземпляр",
-            },
-        )
-
     return "Hello, World!"

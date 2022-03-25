@@ -1,65 +1,32 @@
-from flask import Blueprint, Response, abort, request
+from flask import Blueprint, Response
 
-from smartyard.utils import access_verification
+from smartyard.utils import access_verification, json_verification
 
 issues_branch = Blueprint("issues", __name__, url_prefix="/issues")
 
 
 @issues_branch.route("/action", methods=["POST"])
+@access_verification
+@json_verification
 def action() -> str:
-    access_verification(request.headers)
-
-    request_data = request.get_json() or {}
-    if not request_data:
-        abort(
-            422,
-            {
-                "code": 422,
-                "name": "Unprocessable Entity",
-                "message": "Необрабатываемый экземпляр",
-            },
-        )
-
     return "Hello, World!"
 
 
 @issues_branch.route("/comment", methods=["POST"])
+@access_verification
+@json_verification
 def comment() -> str:
-    access_verification(request.headers)
-
-    request_data = request.get_json() or {}
-    if not request_data:
-        abort(
-            422,
-            {
-                "code": 422,
-                "name": "Unprocessable Entity",
-                "message": "Необрабатываемый экземпляр",
-            },
-        )
-
     return "Hello, World!"
 
 
 @issues_branch.route("/create", methods=["POST"])
+@access_verification
+@json_verification
 def create() -> str:
-    access_verification(request.headers)
-
-    request_data = request.get_json() or {}
-    if not request_data:
-        abort(
-            422,
-            {
-                "code": 422,
-                "name": "Unprocessable Entity",
-                "message": "Необрабатываемый экземпляр",
-            },
-        )
-
     return "Hello, World!"
 
 
 @issues_branch.route("/listConnect", methods=["POST"])
+@access_verification
 def list_connect() -> Response:
-    access_verification(request.headers)
     return Response(status=204, mimetype="application/json")

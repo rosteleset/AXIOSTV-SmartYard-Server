@@ -1,23 +1,12 @@
-from flask import Blueprint, abort, request
+from flask import Blueprint
 
-from smartyard.utils import access_verification
+from smartyard.utils import access_verification, json_verification
 
 sip_branch = Blueprint("sip", __name__, url_prefix="/sip")
 
 
 @sip_branch.route("/helpMe", methods=["POST"])
+@access_verification
+@json_verification
 def help_me() -> str:
-    access_verification(request.headers)
-
-    request_data = request.get_json() or {}
-    if not request_data:
-        abort(
-            422,
-            {
-                "code": 422,
-                "name": "Unprocessable Entity",
-                "message": "Необрабатываемый экземпляр",
-            },
-        )
-
     return "Hello, World!"

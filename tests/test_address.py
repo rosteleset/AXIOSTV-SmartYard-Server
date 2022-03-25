@@ -84,7 +84,9 @@ def test_get_address_list(
     client: FlaskClient, test_config: Config, mocker: MockerFixture
 ) -> None:
     mocker.patch.object(UsersBank, "search_by_uuid", return_value=(79001234567,))
-    mocker.patch.object(Billing, "get_address_list", return_value={"response": "response"})
+    mocker.patch.object(
+        Billing, "get_address_list", return_value={"response": "response"}
+    )
     response = client.post(
         "/api/address/getAddressList",
         headers={"Authorization": "auth"},

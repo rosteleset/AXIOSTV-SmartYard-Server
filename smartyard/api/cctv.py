@@ -1,27 +1,17 @@
-from flask import Blueprint, Response, abort, jsonify, request
+from flask import Blueprint, Response, jsonify, request
 
-from smartyard.utils import access_verification, generate_video_token
+from smartyard.utils import (access_verification, generate_video_token,
+                             json_verification)
 
 cctv_branch = Blueprint("cctv", __name__, url_prefix="/cctv")
 
 
 @cctv_branch.route("/all", methods=["POST"])
+@access_verification
+@json_verification
 def all() -> Response:
-    phone = access_verification(request.headers)
-
-    request_data = request.get_json() or {}
-    if not request_data:
-        abort(
-            422,
-            {
-                "code": 422,
-                "name": "Unprocessable Entity",
-                "message": "Необрабатываемый экземпляр",
-            },
-        )
-
     strims = ["111111", "222222", "333333"]
-    videotoken = generate_video_token(phone, strims)
+    videotoken = generate_video_token(request.environ["USER_PHONE"], strims)
     response = {
         "code": 200,
         "name": "OK",
@@ -47,7 +37,7 @@ def all() -> Response:
                 "id": 723,
                 "name": "Домофон Пионерская 5 б п 1",
                 "lat": "52.703248663394",
-                "url": "https:\/\/fl2.lanta.me:8443\/89318",
+                "url": "https://fl2.lanta.me:8443/89318",
                 "token": "a319639b20342a17c06aa51c12359f2a",
                 "lon": "41.473443133291",
             },
@@ -55,7 +45,7 @@ def all() -> Response:
                 "id": 694,
                 "name": "Пионерская 5б Вид сверху 4 - парковка у ТП",
                 "lat": "52.703443771131",
-                "url": "https:\/\/fl2.lanta.me:8443\/91171",
+                "url": "https://fl2.lanta.me:8443/91171",
                 "token": "a319639b20342a17c06aa51c12359f2a",
                 "lon": "41.473441666458",
             },
@@ -63,7 +53,7 @@ def all() -> Response:
                 "id": 724,
                 "name": "Домофон Пионерская 5 б п 2",
                 "lat": "52.703204679595",
-                "url": "https:\/\/fl2.lanta.me:8443\/91071",
+                "url": "https://fl2.lanta.me:8443/91071",
                 "token": "a319639b20342a17c06aa51c12359f2a",
                 "lon": "41.473222898785",
             },
@@ -71,7 +61,7 @@ def all() -> Response:
                 "id": 695,
                 "name": "Пионерская 5б Въезд в тупик для чтения номеров",
                 "lat": "52.703021201666",
-                "url": "https:\/\/fl3.lanta.me:8443\/91172",
+                "url": "https://fl3.lanta.me:8443/91172",
                 "token": "a319639b20342a17c06aa51c12359f2a",
                 "lon": "41.472768306267",
             },
@@ -79,7 +69,7 @@ def all() -> Response:
                 "id": 725,
                 "name": "Домофон Пионерская 5 б п 3",
                 "lat": "52.703178916547",
-                "url": "https:\/\/fl2.lanta.me:8443\/91072",
+                "url": "https://fl2.lanta.me:8443/91072",
                 "token": "a319639b20342a17c06aa51c12359f2a",
                 "lon": "41.472994973883",
             },
@@ -87,7 +77,7 @@ def all() -> Response:
                 "id": 696,
                 "name": "Пионерская 5б Въезд во двор для чтения номеров",
                 "lat": "52.703308087163",
-                "url": "https:\/\/fl2.lanta.me:8443\/91174",
+                "url": "https://fl2.lanta.me:8443/91174",
                 "token": "a319639b20342a17c06aa51c12359f2a",
                 "lon": "41.473656725138",
             },
@@ -95,7 +85,7 @@ def all() -> Response:
                 "id": 726,
                 "name": "Домофон Пионерская 5 б п 4",
                 "lat": "52.703346026911",
-                "url": "https:\/\/fl2.lanta.me:8443\/91073",
+                "url": "https://fl2.lanta.me:8443/91073",
                 "token": "a319639b20342a17c06aa51c12359f2a",
                 "lon": "41.472863964736",
             },
@@ -103,7 +93,7 @@ def all() -> Response:
                 "id": 697,
                 "name": "Пионерская 5б Двор - вдоль проезда на север",
                 "lat": "52.703443618763",
-                "url": "https:\/\/fl2.lanta.me:8443\/91176",
+                "url": "https://fl2.lanta.me:8443/91176",
                 "token": "a319639b20342a17c06aa51c12359f2a",
                 "lon": "41.4730289625",
             },
@@ -111,7 +101,7 @@ def all() -> Response:
                 "id": 727,
                 "name": "Домофон Пионерская 5 б п 5",
                 "lat": "52.703531471559",
-                "url": "https:\/\/fl2.lanta.me:8443\/91074",
+                "url": "https://fl2.lanta.me:8443/91074",
                 "token": "a319639b20342a17c06aa51c12359f2a",
                 "lon": "41.47279571509",
             },
@@ -119,7 +109,7 @@ def all() -> Response:
                 "id": 698,
                 "name": "Пионерская 5б Двор - парковка у 5-го подъезда",
                 "lat": "52.703597281681",
-                "url": "https:\/\/fl2.lanta.me:8443\/91177",
+                "url": "https://fl2.lanta.me:8443/91177",
                 "token": "a319639b20342a17c06aa51c12359f2a",
                 "lon": "41.472968256567",
             },
@@ -127,7 +117,7 @@ def all() -> Response:
                 "id": 728,
                 "name": "Домофон Пионерская 5 б Калитка",
                 "lat": "52.703142017842",
-                "url": "https:\/\/fl2.lanta.me:8443\/91078",
+                "url": "https://fl2.lanta.me:8443/91078",
                 "token": "a319639b20342a17c06aa51c12359f2a",
                 "lon": "41.473720762879",
             },
@@ -135,7 +125,7 @@ def all() -> Response:
                 "id": 699,
                 "name": "Пионерская 5б Вид сверху 1 - Пионерская",
                 "lat": "52.703042139774",
-                "url": "https:\/\/fl2.lanta.me:8443\/89312",
+                "url": "https://fl2.lanta.me:8443/89312",
                 "token": "a319639b20342a17c06aa51c12359f2a",
                 "lon": "41.473282892257",
             },
@@ -146,8 +136,8 @@ def all() -> Response:
 
 
 @cctv_branch.route("/camMap", methods=["POST"])
+@access_verification
 def cam_map() -> Response:
-    access_verification(request.headers)
     return jsonify(
         response={
             "code": 200,
@@ -196,72 +186,28 @@ def cam_map() -> Response:
 
 
 @cctv_branch.route("/overview", methods=["POST"])
+@access_verification
+@json_verification
 def overview() -> str:
-    access_verification(request.headers)
-
-    request_data = request.get_json() or {}
-    if not request_data:
-        abort(
-            422,
-            {
-                "code": 422,
-                "name": "Unprocessable Entity",
-                "message": "Необрабатываемый экземпляр",
-            },
-        )
-
     return "Hello, World!"
 
 
 @cctv_branch.route("/recDownload", methods=["POST"])
+@access_verification
+@json_verification
 def rec_download() -> str:
-    access_verification(request.headers)
-
-    request_data = request.get_json() or {}
-    if not request_data:
-        abort(
-            422,
-            {
-                "code": 422,
-                "name": "Unprocessable Entity",
-                "message": "Необрабатываемый экземпляр",
-            },
-        )
-
     return "Hello, World!"
 
 
 @cctv_branch.route("/recPrepare", methods=["POST"])
+@access_verification
+@json_verification
 def rec_prepare() -> str:
-    access_verification(request.headers)
-
-    request_data = request.get_json() or {}
-    if not request_data:
-        abort(
-            422,
-            {
-                "code": 422,
-                "name": "Unprocessable Entity",
-                "message": "Необрабатываемый экземпляр",
-            },
-        )
-
     return "Hello, World!"
 
 
 @cctv_branch.route("/youtube", methods=["POST"])
+@access_verification
+@json_verification
 def youtube() -> str:
-    access_verification(request.headers)
-
-    request_data = request.get_json() or {}
-    if not request_data:
-        abort(
-            422,
-            {
-                "code": 422,
-                "name": "Unprocessable Entity",
-                "message": "Необрабатываемый экземпляр",
-            },
-        )
-
     return "Hello, World!"

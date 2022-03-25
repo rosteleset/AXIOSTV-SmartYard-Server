@@ -1,44 +1,36 @@
-from flask import Blueprint, Response, abort, current_app, jsonify, request
+from flask import Blueprint, Response, current_app, jsonify, request
 
-from smartyard.utils import access_verification
 from smartyard.proxy.billing import Billing
+from smartyard.utils import access_verification, json_verification
 
 address_branch = Blueprint("address", __name__, url_prefix="/address")
 
 
 @address_branch.route("/access", methods=["POST"])
+@access_verification
+@json_verification(("guestPhone", "flatId", "clientId", "expire"))
 def access() -> Response:
-    access_verification(request.headers)
-
-    request_data = request.get_json() or {}
+    request_data = request.get_json()
     guest_phone = request_data.get("guestPhone")
     flat_id = request_data.get("flatId")
     client_id = request_data.get("clientId")
     expire = request_data.get("expire")
 
-    if not all({guest_phone, flat_id, client_id, expire}):
-        abort(
-            422,
-            {
-                "code": 422,
-                "name": "Unprocessable Entity",
-                "message": "Необрабатываемый экземпляр",
-            },
-        )
-
     return Response(status=204, mimetype="application/json")
 
 
 @address_branch.route("/getAddressList", methods=["POST"])
+@access_verification
 def get_address_list() -> Response:
-    phone = access_verification(request.headers)
     config = current_app.config["CONFIG"]
-    return jsonify(Billing(config.BILLING_URL).get_address_list(phone))
+    return jsonify(
+        Billing(config.BILLING_URL).get_address_list(request.environ["USER_PHONE"])
+    )
 
 
 @address_branch.route("/getSettingsList", methods=["POST"])
+@access_verification
 def get_settings_list() -> Response:
-    access_verification(request.headers)
     return jsonify(
         {
             "code": 200,
@@ -47,12 +39,12 @@ def get_settings_list() -> Response:
             "data": [
                 {
                     "hasPlog": "t",
-                    "contractName": "ФЛ-85973\/20",
+                    "contractName": "ФЛ-85973/20",
                     "clientId": "91052",
                     "contractOwner": "t",
                     "clientName": "Бивард-00011 (Чемодан 2)",
                     "services": ["internet", "cctv", "domophone"],
-                    "lcab": "https:\/\/lc.lanta.me\/?auth=Zjg1OTczOmY5NzkzNTQzM2U5YmQ5ZThkYTJiZmU2MWMwNDlkZGMy",
+                    "lcab": "https://lc.lanta.me/?auth=Zjg1OTczOmY5NzkzNTQzM2U5YmQ5ZThkYTJiZmU2MWMwNDlkZGMy",
                     "houseId": "19260",
                     "flatId": "136151",
                     "flatNumber": "1",
@@ -212,21 +204,11 @@ def get_settings_list() -> Response:
 
 
 @address_branch.route("/intercom", methods=["POST"])
+@access_verification
+@json_verification(("flatId",))
 def intercom() -> Response:
-    access_verification(request.headers)
-
     request_data = request.get_json() or {}
     flat_id = request_data.get("flatId")
-    if not flat_id:
-        abort(
-            422,
-            {
-                "code": 422,
-                "name": "Unprocessable Entity",
-                "message": "Необрабатываемый экземпляр",
-            },
-        )
-
     return jsonify(
         {
             "code": 200,
@@ -246,21 +228,9 @@ def intercom() -> Response:
 
 
 @address_branch.route("/offices", methods=["POST"])
+@access_verification
+@json_verification
 def offices() -> Response:
-    access_verification(request.headers)
-
-    # TODO: Есть ли необходимость проверки?
-    request_data = request.get_json() or {}
-    if not request_data:
-        abort(
-            422,
-            {
-                "code": 422,
-                "name": "Unprocessable Entity",
-                "message": "Необрабатываемый экземпляр",
-            },
-        )
-
     return jsonify(
         {
             "code": 200,
@@ -303,40 +273,20 @@ def offices() -> Response:
 
 
 @address_branch.route("/openDoor", methods=["POST"])
+@access_verification
+@json_verification(("domophoneId",))
 def open_door() -> Response:
-    access_verification(request.headers)
-
     request_data = request.get_json() or {}
     domophone_id = request_data.get("domophoneId")
-    if not domophone_id:
-        abort(
-            422,
-            {
-                "code": 422,
-                "name": "Unprocessable Entity",
-                "message": "Необрабатываемый экземпляр",
-            },
-        )
-
     return Response(status=204, mimetype="application/json")
 
 
 @address_branch.route("/plog", methods=["POST"])
+@access_verification
+@json_verification(("flatId",))
 def plog() -> Response:
-    access_verification(request.headers)
-
     request_data = request.get_json() or {}
     flat_id = request_data.get("flatId")
-    if not flat_id:
-        abort(
-            422,
-            {
-                "code": 422,
-                "name": "Unprocessable Entity",
-                "message": "Необрабатываемый экземпляр",
-            },
-        )
-
     return jsonify(
         {
             "code": 200,
@@ -353,7 +303,7 @@ def plog() -> Response:
                     "mechanizmaDescription": "Пионерская 5 б п 3 [Подъезд]",
                     "event": "1",
                     "detail": "1",
-                    "preview": "https:\/\/static.dm.lanta.me\/2021-12-15\/3\/f\/9\/9\/3f99bdf6-96ef-4300-b709-1f557806c65b.jpg",
+                    "preview": "https://static.dm.lanta.me/2021-12-15/3/f/9/9/3f99bdf6-96ef-4300-b709-1f557806c65b.jpg",
                     "previewType": 2,
                     "detailX": {
                         "opened": "f",
@@ -376,7 +326,7 @@ def plog() -> Response:
                     "mechanizmaDescription": "Пионерская 5 б [Калитка]",
                     "event": "4",
                     "detail": "89103523377",
-                    "preview": "https:\/\/static.dm.lanta.me\/2021-12-15\/8\/6\/d\/d\/86ddb8e1-1122-4946-8495-a251b6320b99.jpg",
+                    "preview": "https://static.dm.lanta.me/2021-12-15/8/6/d/d/86ddb8e1-1122-4946-8495-a251b6320b99.jpg",
                     "previewType": 1,
                     "detailX": {"phone": "89103523377"},
                 },
@@ -390,7 +340,7 @@ def plog() -> Response:
                     "mechanizmaDescription": "Пионерская 5 б [Калитка]",
                     "event": "4",
                     "detail": "89103523377",
-                    "preview": "https:\/\/static.dm.lanta.me\/2021-12-15\/a\/d\/1\/4\/ad14c83a-126a-4f09-a659-f412fb11007e.jpg",
+                    "preview": "https://static.dm.lanta.me/2021-12-15/a/d/1/4/ad14c83a-126a-4f09-a659-f412fb11007e.jpg",
                     "previewType": 1,
                     "detailX": {"phone": "89103523377"},
                 },
@@ -404,7 +354,7 @@ def plog() -> Response:
                     "mechanizmaDescription": "Пионерская 5 б [Калитка]",
                     "event": "4",
                     "detail": "89103523377",
-                    "preview": "https:\/\/static.dm.lanta.me\/2021-12-15\/0\/b\/3\/3\/0b335948-864f-41d6-b9a7-465f88f20ef1.jpg",
+                    "preview": "https://static.dm.lanta.me/2021-12-15/0/b/3/3/0b335948-864f-41d6-b9a7-465f88f20ef1.jpg",
                     "previewType": 1,
                     "detailX": {"phone": "89103523377"},
                 },
@@ -418,7 +368,7 @@ def plog() -> Response:
                     "mechanizmaDescription": "Пионерская 5 б [Калитка]",
                     "event": "4",
                     "detail": "89103523377",
-                    "preview": "https:\/\/static.dm.lanta.me\/2021-12-15\/8\/f\/c\/3\/8fc3224e-ef46-4ec6-9d5d-04e249ec2e31.jpg",
+                    "preview": "https://static.dm.lanta.me/2021-12-15/8/f/c/3/8fc3224e-ef46-4ec6-9d5d-04e249ec2e31.jpg",
                     "previewType": 1,
                     "detailX": {"phone": "89103523377"},
                 },
@@ -432,7 +382,7 @@ def plog() -> Response:
                     "mechanizmaDescription": "Пионерская 5 б [Калитка]",
                     "event": "4",
                     "detail": "89103523377",
-                    "preview": "https:\/\/static.dm.lanta.me\/2021-12-15\/c\/2\/8\/c\/c28c7e58-7797-4143-a2b8-2c513e216bb8.jpg",
+                    "preview": "https://static.dm.lanta.me/2021-12-15/c/2/8/c/c28c7e58-7797-4143-a2b8-2c513e216bb8.jpg",
                     "previewType": 1,
                     "detailX": {"phone": "89103523377"},
                 },
@@ -442,20 +392,11 @@ def plog() -> Response:
 
 
 @address_branch.route("/plogDays", methods=["POST"])
+@access_verification
+@json_verification(("flatId",))
 def plog_days() -> Response:
-    access_verification(request.headers)
-
     request_data = request.get_json() or {}
     flat_id = request_data.get("flatId")
-    if not flat_id:
-        abort(
-            422,
-            {
-                "code": 422,
-                "name": "Unprocessable Entity",
-                "message": "Необрабатываемый экземпляр",
-            },
-        )
 
     return jsonify(
         {
@@ -529,20 +470,11 @@ def plog_days() -> Response:
 
 
 @address_branch.route("/registerQR", methods=["POST"])
+@access_verification
+@json_verification(("QR",))
 def register_qr() -> Response:
-    access_verification(request.headers)
-
-    request_data = request.get_json() or {}
+    request_data = request.get_json()
     qr = request_data.get("QR")
-    if not qr:
-        abort(
-            422,
-            {
-                "code": 422,
-                "name": "Unprocessable Entity",
-                "message": "Необрабатываемый экземпляр",
-            },
-        )
 
     qr_current = qr + "1"
     # TODO: Проверить: с условием что-то не то
@@ -572,44 +504,22 @@ def register_qr() -> Response:
 
 
 @address_branch.route("/resend", methods=["POST"])
+@access_verification
+@json_verification
 def resend() -> str:
-    access_verification(request.headers)
-
-    request_data = request.get_json() or {}
-    if not request_data:
-        abort(
-            422,
-            {
-                "code": 422,
-                "name": "Unprocessable Entity",
-                "message": "Необрабатываемый экземпляр",
-            },
-        )
-
     return "Hello, World!"
 
 
 @address_branch.route("/resetCode", methods=["POST"])
+@access_verification
+@json_verification
 def reset_code() -> str:
-    access_verification(request.headers)
-
-    request_data = request.get_json() or {}
-    if not request_data:
-        abort(
-            422,
-            {
-                "code": 422,
-                "name": "Unprocessable Entity",
-                "message": "Необрабатываемый экземпляр",
-            },
-        )
-
     return "Hello, World!"
 
 
 @address_branch.route("/getHcsList", methods=["POST"])
+@access_verification
 def get_hcs_list():
-    access_verification(request.headers)
     return jsonify(
         {
             "code": 200,

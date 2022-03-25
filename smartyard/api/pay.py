@@ -3,7 +3,7 @@ import sys
 
 from flask import Blueprint, Response, current_app, jsonify, request
 
-from smartyard.proxy.billing import Billing
+from smartyard.proxy import Billing
 from smartyard.utils import access_verification, json_verification
 
 pay_branch = Blueprint("pay", __name__, url_prefix="/pay")

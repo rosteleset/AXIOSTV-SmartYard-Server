@@ -4,8 +4,7 @@ from flask import Blueprint, Response, abort, current_app, jsonify, request
 
 from smartyard.exceptions import NotFoundCodeAndPhone, NotFoundCodesForPhone
 from smartyard.logic.users_bank import UsersBank
-from smartyard.proxy.billing import Billing
-from smartyard.proxy.kannel import Kannel
+from smartyard.proxy import Billing, Kannel
 from smartyard.utils import access_verification, json_verification
 
 user_branch = Blueprint("user", __name__, url_prefix="/user")

@@ -10,8 +10,7 @@ from smartyard import create_app
 from smartyard.config import Config, get_config
 from smartyard.exceptions import NotFoundCodeAndPhone, NotFoundCodesForPhone
 from smartyard.logic.users_bank import UsersBank
-from smartyard.proxy.billing import Billing
-from smartyard.proxy.kannel import Kannel
+from smartyard.proxy import Billing, Kannel
 
 
 @pytest.fixture

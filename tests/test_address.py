@@ -9,7 +9,7 @@ from pytest_mock import MockerFixture
 from smartyard import create_app
 from smartyard.config import Config, get_config
 from smartyard.logic.users_bank import UsersBank
-from smartyard.proxy.billing import Billing
+from smartyard.proxy import Billing
 
 
 @pytest.fixture

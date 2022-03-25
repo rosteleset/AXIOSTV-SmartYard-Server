@@ -4,9 +4,7 @@ from pytest_mock import MockerFixture
 from smartyard.logic.users_bank import UsersBank
 
 
-
 def test_all(flask_client: FlaskClient, mocker: MockerFixture) -> None:
-    print(flask_client, mocker)
     mocker.patch.object(UsersBank, "search_by_uuid", return_value=(79001234567,))
     mocker.patch.object(UsersBank, "update_video_token", return_value=None)
     response = flask_client.post(

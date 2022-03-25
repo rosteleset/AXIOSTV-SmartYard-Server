@@ -8,7 +8,6 @@ from smartyard.exceptions import NotFoundCodeAndPhone, NotFoundCodesForPhone
 from smartyard.logic.users_bank import UsersBank
 from smartyard.proxy import Billing, Kannel
 
-
 add_my_phone_required_fields = {"login", "password"}
 add_my_phone_optional_fields = {"comment", "notification"}
 
@@ -92,7 +91,9 @@ def test_app_version_not_enough_params(
     }
 
 
-def test_app_version_wrong_platform(flask_client: FlaskClient, mocker: MockerFixture) -> None:
+def test_app_version_wrong_platform(
+    flask_client: FlaskClient, mocker: MockerFixture
+) -> None:
     mocker.patch.object(UsersBank, "search_by_uuid", return_value=(79001234567,))
     response = flask_client.post(
         "/api/user/appVersion",
@@ -297,9 +298,7 @@ def test_confirm_code(flask_client: FlaskClient, mocker: MockerFixture) -> None:
     }
 
 
-def test_get_payments_list(
-    flask_client: FlaskClient, mocker: MockerFixture
-) -> None:
+def test_get_payments_list(flask_client: FlaskClient, mocker: MockerFixture) -> None:
     mocker.patch.object(UsersBank, "search_by_uuid", return_value=(79001234567,))
     mocker.patch.object(Billing, "get_list", return_value={"response": "response"})
 
@@ -641,9 +640,7 @@ def test_send_name(
         assert response.get_json() == expected["content"]
 
 
-def test_get_billing_list(
-    flask_client: FlaskClient, mocker: MockerFixture
-) -> None:
+def test_get_billing_list(flask_client: FlaskClient, mocker: MockerFixture) -> None:
     mocker.patch.object(UsersBank, "search_by_uuid", return_value=(79001234567,))
     mocker.patch.object(Billing, "get_list", return_value={"response": "response"})
 

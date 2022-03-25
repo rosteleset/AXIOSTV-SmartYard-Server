@@ -5,9 +5,7 @@ from smartyard.logic.users_bank import UsersBank
 from smartyard.proxy import Billing
 
 
-def test_prepare(
-    flask_client: FlaskClient, mocker: MockerFixture
-) -> None:
+def test_prepare(flask_client: FlaskClient, mocker: MockerFixture) -> None:
     mocker.patch.object(UsersBank, "search_by_uuid", return_value=(79001234567,))
     mocker.patch.object(
         Billing, "create_invoice", return_value={"response": "response"}

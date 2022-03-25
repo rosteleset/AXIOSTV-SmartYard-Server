@@ -8,7 +8,6 @@ from smartyard.config import Config
 from smartyard.logic.users_bank import UsersBank
 from smartyard.proxy import Billing
 
-
 access_fields = {"clientId", "expire", "flatId", "guestPhone"}
 
 
@@ -78,7 +77,9 @@ def test_get_settings_list(flask_client: FlaskClient, mocker: MockerFixture) -> 
     assert response.get_json()
 
 
-def test_intercom_without_flat_id(flask_client: FlaskClient, mocker: MockerFixture) -> None:
+def test_intercom_without_flat_id(
+    flask_client: FlaskClient, mocker: MockerFixture
+) -> None:
     mocker.patch.object(UsersBank, "search_by_uuid", return_value=(79001234567,))
     response = flask_client.post(
         "/api/address/intercom",
@@ -95,7 +96,9 @@ def test_intercom_without_flat_id(flask_client: FlaskClient, mocker: MockerFixtu
     }
 
 
-def test_intercom_with_flat_id(flask_client: FlaskClient, mocker: MockerFixture) -> None:
+def test_intercom_with_flat_id(
+    flask_client: FlaskClient, mocker: MockerFixture
+) -> None:
     mocker.patch.object(UsersBank, "search_by_uuid", return_value=(79001234567,))
     response = flask_client.post(
         "/api/address/intercom",
@@ -184,7 +187,9 @@ def test_plog_with_flat_id(flask_client: FlaskClient, mocker: MockerFixture) -> 
     assert response.get_json()
 
 
-def test_plog_days_without_flat_id(flask_client: FlaskClient, mocker: MockerFixture) -> None:
+def test_plog_days_without_flat_id(
+    flask_client: FlaskClient, mocker: MockerFixture
+) -> None:
     mocker.patch.object(UsersBank, "search_by_uuid", return_value=(79001234567,))
     response = flask_client.post(
         "/api/address/plogDays",
@@ -201,7 +206,9 @@ def test_plog_days_without_flat_id(flask_client: FlaskClient, mocker: MockerFixt
     }
 
 
-def test_plog_days_with_flat_id(flask_client: FlaskClient, mocker: MockerFixture) -> None:
+def test_plog_days_with_flat_id(
+    flask_client: FlaskClient, mocker: MockerFixture
+) -> None:
     mocker.patch.object(UsersBank, "search_by_uuid", return_value=(79001234567,))
     response = flask_client.post(
         "/api/address/plogDays",
@@ -214,7 +221,9 @@ def test_plog_days_with_flat_id(flask_client: FlaskClient, mocker: MockerFixture
     assert response.get_json()
 
 
-def test_register_qr_without_qr(flask_client: FlaskClient, mocker: MockerFixture) -> None:
+def test_register_qr_without_qr(
+    flask_client: FlaskClient, mocker: MockerFixture
+) -> None:
     mocker.patch.object(UsersBank, "search_by_uuid", return_value=(79001234567,))
     response = flask_client.post(
         "/api/address/registerQR",

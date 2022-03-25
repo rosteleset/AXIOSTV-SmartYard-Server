@@ -4,7 +4,6 @@ from pytest_mock import MockerFixture
 
 from smartyard.logic.users_bank import UsersBank
 
-
 endpoints = {
     ("post", "/api/address/access"),
     ("post", "/api/address/getAddressList"),

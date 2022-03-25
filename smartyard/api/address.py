@@ -1,3 +1,4 @@
+"""Модуль описания эндпойнтов ветки /address API"""
 from flask import Blueprint, Response, current_app, jsonify, request
 
 from smartyard.proxy import Billing
@@ -10,18 +11,14 @@ address_branch = Blueprint("address", __name__, url_prefix="/address")
 @access_verification
 @json_verification(("guestPhone", "flatId", "clientId", "expire"))
 def access() -> Response:
-    request_data = request.get_json()
-    guest_phone = request_data.get("guestPhone")
-    flat_id = request_data.get("flatId")
-    client_id = request_data.get("clientId")
-    expire = request_data.get("expire")
-
+    """Управление доступами"""
     return Response(status=204, mimetype="application/json")
 
 
 @address_branch.route("/getAddressList", methods=["POST"])
 @access_verification
 def get_address_list() -> Response:
+    """Список адресов на главный экран"""
     config = current_app.config["CONFIG"]
     return jsonify(
         Billing(config.BILLING_URL).get_address_list(request.environ["USER_PHONE"])
@@ -31,6 +28,7 @@ def get_address_list() -> Response:
 @address_branch.route("/getSettingsList", methods=["POST"])
 @access_verification
 def get_settings_list() -> Response:
+    """Список адресов для настроек"""
     return jsonify(
         {
             "code": 200,
@@ -44,7 +42,10 @@ def get_settings_list() -> Response:
                     "contractOwner": "t",
                     "clientName": "Бивард-00011 (Чемодан 2)",
                     "services": ["internet", "cctv", "domophone"],
-                    "lcab": "https://lc.lanta.me/?auth=Zjg1OTczOmY5NzkzNTQzM2U5YmQ5ZThkYTJiZmU2MWMwNDlkZGMy",
+                    "lcab": (
+                        "https://lc.lanta.me/?auth="
+                        "Zjg1OTczOmY5NzkzNTQzM2U5YmQ5ZThkYTJiZmU2MWMwNDlkZGMy"
+                    ),
                     "houseId": "19260",
                     "flatId": "136151",
                     "flatNumber": "1",
@@ -207,8 +208,7 @@ def get_settings_list() -> Response:
 @access_verification
 @json_verification(("flatId",))
 def intercom() -> Response:
-    request_data = request.get_json() or {}
-    flat_id = request_data.get("flatId")
+    """Настройки домофона (квартиры)"""
     return jsonify(
         {
             "code": 200,
@@ -231,6 +231,7 @@ def intercom() -> Response:
 @access_verification
 @json_verification
 def offices() -> Response:
+    """Адреса офисов"""
     return jsonify(
         {
             "code": 200,
@@ -276,8 +277,7 @@ def offices() -> Response:
 @access_verification
 @json_verification(("domophoneId",))
 def open_door() -> Response:
-    request_data = request.get_json() or {}
-    domophone_id = request_data.get("domophoneId")
+    """Открыть дверь (калитку, ворота, шлагбаум)"""
     return Response(status=204, mimetype="application/json")
 
 
@@ -285,8 +285,7 @@ def open_door() -> Response:
 @access_verification
 @json_verification(("flatId",))
 def plog() -> Response:
-    request_data = request.get_json() or {}
-    flat_id = request_data.get("flatId")
+    """Журнал событий объекта за день"""
     return jsonify(
         {
             "code": 200,
@@ -303,7 +302,10 @@ def plog() -> Response:
                     "mechanizmaDescription": "Пионерская 5 б п 3 [Подъезд]",
                     "event": "1",
                     "detail": "1",
-                    "preview": "https://static.dm.lanta.me/2021-12-15/3/f/9/9/3f99bdf6-96ef-4300-b709-1f557806c65b.jpg",
+                    "preview": (
+                        "https://static.dm.lanta.me/2021-12-15/3/"
+                        "f/9/9/3f99bdf6-96ef-4300-b709-1f557806c65b.jpg"
+                    ),
                     "previewType": 2,
                     "detailX": {
                         "opened": "f",
@@ -326,7 +328,10 @@ def plog() -> Response:
                     "mechanizmaDescription": "Пионерская 5 б [Калитка]",
                     "event": "4",
                     "detail": "89103523377",
-                    "preview": "https://static.dm.lanta.me/2021-12-15/8/6/d/d/86ddb8e1-1122-4946-8495-a251b6320b99.jpg",
+                    "preview": (
+                        "https://static.dm.lanta.me/2021-12-15/8"
+                        "/6/d/d/86ddb8e1-1122-4946-8495-a251b6320b99.jpg"
+                    ),
                     "previewType": 1,
                     "detailX": {"phone": "89103523377"},
                 },
@@ -340,7 +345,10 @@ def plog() -> Response:
                     "mechanizmaDescription": "Пионерская 5 б [Калитка]",
                     "event": "4",
                     "detail": "89103523377",
-                    "preview": "https://static.dm.lanta.me/2021-12-15/a/d/1/4/ad14c83a-126a-4f09-a659-f412fb11007e.jpg",
+                    "preview": (
+                        "https://static.dm.lanta.me/2021-12-15/a"
+                        "/d/1/4/ad14c83a-126a-4f09-a659-f412fb11007e.jpg"
+                    ),
                     "previewType": 1,
                     "detailX": {"phone": "89103523377"},
                 },
@@ -354,7 +362,10 @@ def plog() -> Response:
                     "mechanizmaDescription": "Пионерская 5 б [Калитка]",
                     "event": "4",
                     "detail": "89103523377",
-                    "preview": "https://static.dm.lanta.me/2021-12-15/0/b/3/3/0b335948-864f-41d6-b9a7-465f88f20ef1.jpg",
+                    "preview": (
+                        "https://static.dm.lanta.me/2021-12-15/0"
+                        "/b/3/3/0b335948-864f-41d6-b9a7-465f88f20ef1.jpg"
+                    ),
                     "previewType": 1,
                     "detailX": {"phone": "89103523377"},
                 },
@@ -368,7 +379,10 @@ def plog() -> Response:
                     "mechanizmaDescription": "Пионерская 5 б [Калитка]",
                     "event": "4",
                     "detail": "89103523377",
-                    "preview": "https://static.dm.lanta.me/2021-12-15/8/f/c/3/8fc3224e-ef46-4ec6-9d5d-04e249ec2e31.jpg",
+                    "preview": (
+                        "https://static.dm.lanta.me/2021-12-15/8"
+                        "/f/c/3/8fc3224e-ef46-4ec6-9d5d-04e249ec2e31.jpg"
+                    ),
                     "previewType": 1,
                     "detailX": {"phone": "89103523377"},
                 },
@@ -382,7 +396,10 @@ def plog() -> Response:
                     "mechanizmaDescription": "Пионерская 5 б [Калитка]",
                     "event": "4",
                     "detail": "89103523377",
-                    "preview": "https://static.dm.lanta.me/2021-12-15/c/2/8/c/c28c7e58-7797-4143-a2b8-2c513e216bb8.jpg",
+                    "preview": (
+                        "https://static.dm.lanta.me/2021-12-15/c"
+                        "/2/8/c/c28c7e58-7797-4143-a2b8-2c513e216bb8.jpg"
+                    ),
                     "previewType": 1,
                     "detailX": {"phone": "89103523377"},
                 },
@@ -395,9 +412,7 @@ def plog() -> Response:
 @access_verification
 @json_verification(("flatId",))
 def plog_days() -> Response:
-    request_data = request.get_json() or {}
-    flat_id = request_data.get("flatId")
-
+    """Список дат (дней) на которые есть записи в журнале событий объекта"""
     return jsonify(
         {
             "code": 200,
@@ -473,33 +488,46 @@ def plog_days() -> Response:
 @access_verification
 @json_verification(("QR",))
 def register_qr() -> Response:
+    """Зарегистрировать QR код"""
     request_data = request.get_json()
-    qr = request_data.get("QR")
+    qr_code = request_data.get("QR")
 
-    qr_current = qr + "1"
+    qr_current = qr_code + "1"
     # TODO: Проверить: с условием что-то не то
-    if qr == qr_current:
+    if qr_code == qr_current:
         response = {
             "code": 520,
             "message": "Этот пользователь уже зарегистрирован в системе",
         }
     # TODO: Проверить: со следующими условиями что-то не то
-    if qr != qr:
-        response = {"code": 520, "message": "Некорректный QR-код!"}
-    if qr != qr:
-        response = {
-            "code": 200,
-            "name": "OK",
-            "message": "Хорошо",
-            "data": "QR-код не является кодом для доступа к квартире",
-        }
-    if qr == qr:
-        response = {
-            "code": 200,
-            "name": "OK",
-            "message": "Хорошо",
-            "data": "Ваш запрос принят и будет обработан в течение одной минуты, пожалуйста подождите",
-        }
+    # if qr_code != qr_code:
+    #     response = {"code": 520, "message": "Некорректный QR-код!"}
+    # if qr_code != qr_code:
+    #     response = {
+    #         "code": 200,
+    #         "name": "OK",
+    #         "message": "Хорошо",
+    #         "data": "QR-код не является кодом для доступа к квартире",
+    #     }
+    # if qr_code == qr_code:
+    #     response = {
+    #         "code": 200,
+    #         "name": "OK",
+    #         "message": "Хорошо",
+    #         "data": (
+    #             "Ваш запрос принят и будет обработан "
+    #             "в течение одной минуты, пожалуйста подождите"
+    #         ),
+    #     }
+    response = {
+        "code": 200,
+        "name": "OK",
+        "message": "Хорошо",
+        "data": (
+            "Ваш запрос принят и будет обработан "
+            "в течение одной минуты, пожалуйста подождите"
+        ),
+    }
     return jsonify(response)
 
 
@@ -507,6 +535,7 @@ def register_qr() -> Response:
 @access_verification
 @json_verification
 def resend() -> str:
+    """Повторная отправка информации для гостя"""
     return "Hello, World!"
 
 
@@ -514,12 +543,14 @@ def resend() -> str:
 @access_verification
 @json_verification
 def reset_code() -> str:
+    """Перегенерировать код открытия двери"""
     return "Hello, World!"
 
 
 @address_branch.route("/getHcsList", methods=["POST"])
 @access_verification
 def get_hcs_list():
+    """????"""
     return jsonify(
         {
             "code": 200,

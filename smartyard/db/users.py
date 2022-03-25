@@ -1,4 +1,5 @@
-import uuid
+"""Модуль описания таблицы пользователей сервиса"""
+import uuid as std_uuid
 from datetime import datetime
 from typing import Iterable
 
@@ -10,9 +11,22 @@ _db = create_db_connection()
 
 
 class Users(_db.Model):
+    """Таблица с кодами для аутентификации
+
+    Колонки:
+    - uuid - идентификатор пользователя
+    - userphone - номер телефона
+    - name - имя пользователя
+    - patronymic - отчество пользователя
+    - email - электронная почта пользователя
+    - videotoken - токен для видео-потоков
+    - vttime - дата, до которой токен актуален
+    - strims - доступные видео-потоки
+    """
+
     __tablename__ = "users"
 
-    uuid = _db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    uuid = _db.Column(UUID(as_uuid=True), primary_key=True, default=std_uuid.uuid4)
     userphone = _db.Column(_db.BigInteger, index=True, unique=True)
     name = _db.Column(_db.String(24))
     patronymic = _db.Column(_db.String(24))
@@ -40,6 +54,3 @@ class Users(_db.Model):
         self.videotoken = videotoken
         self.vttime = vttime
         self.strims = strims
-
-    def __repr__(self):
-        return f""

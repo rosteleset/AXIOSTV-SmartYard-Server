@@ -1,3 +1,4 @@
+"""Модуль описания корневой ветки эндпойнтов API сервиса"""
 from datetime import datetime, timedelta
 
 from flask import Blueprint, Response, abort, current_app, request
@@ -8,12 +9,14 @@ root_branch = Blueprint("accessfl", __name__)
 
 
 @root_branch.route("/")
-def index():
+def index() -> str:
+    """Корневой эндпойнт"""
     return "Hello, World!"
 
 
 @root_branch.route("/accessfl", methods=["GET"])
-def accessfl():
+def accessfl() -> Response:
+    """Проверка доступа к Flussonic"""
     token = request.args.get("token")
     name = request.args.get("name", 0)
     if not token:
@@ -22,8 +25,12 @@ def accessfl():
     extime = datetime.now() - timedelta(
         minutes=int(current_app.config["CONFIG"].EXPIRE)
     )
-    for user in UsersBank.get_users_by_videotoken(token):
-        if user and user.vttime >= extime and name in user.strims:
-            return Response(status=200)
+    users = [
+        user
+        for user in UsersBank().get_users_by_videotoken(token)
+        if user and user.vttime >= extime and name in user.strims
+    ]
 
-    abort(403, {"code": 403, "name": "Forbidden", "message": "Неверный токен"})
+    if not users:
+        abort(403, {"code": 403, "name": "Forbidden", "message": "Неверный токен"})
+    return Response(status=200)

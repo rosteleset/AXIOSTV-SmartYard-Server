@@ -1,3 +1,4 @@
+"""Пакет для работы с базой данных сервиса"""
 from .database import create_db_connection
 from .temps import Temps
 from .users import Users

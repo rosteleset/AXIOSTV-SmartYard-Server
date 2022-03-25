@@ -1,3 +1,4 @@
+"""Сервис системы Умный двор"""
 from smartyard import create_app
 from smartyard.config import get_config
 

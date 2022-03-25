@@ -1,6 +1,7 @@
+"""Модуль функций-утилит и декораторов сервиса"""
 import secrets
 from functools import wraps
-from typing import Callable, Iterable
+from typing import Callable, Iterable, Union
 
 from flask import abort, request
 
@@ -8,6 +9,8 @@ from smartyard.logic.users_bank import UsersBank
 
 
 def access_verification(endpoint: Callable):
+    """Декоратор для проверки аутентификации пользователя"""
+
     @wraps(endpoint)
     def _wrapper(*args, **kwargs):
         auth_key = request.headers.get("Authorization")
@@ -32,8 +35,9 @@ def access_verification(endpoint: Callable):
     return _wrapper
 
 
-def json_verification(fields_or_endpoint: Iterable):
-    fields = {}
+def json_verification(fields_or_endpoint: Union[Callable, Iterable]):
+    """Декоратор для проверки наличия присланных в виде JSON параметров"""
+    fields = ()
 
     def _wrapper(endpoint: Callable):
         @wraps(endpoint)
@@ -59,6 +63,7 @@ def json_verification(fields_or_endpoint: Iterable):
 
 
 def generate_video_token(user_phone: int, strims: Iterable) -> str:
+    """Формирование токена для видео-потоков"""
     token = secrets.token_hex(16)
     UsersBank().update_video_token(user_phone, token, strims)
     return token

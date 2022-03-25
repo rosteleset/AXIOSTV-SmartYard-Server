@@ -132,3 +132,15 @@ smartyard/bin/isort --check app.py
 smartyard/bin/isort --check smartyard
 smartyard/bin/isort --check tests
 ```
+
+## Проверка кода с flake8
+```
+smartyard/bin/flake8 app.py
+smartyard/bin/flake8 smartyard
+```
+
+## Проверка кода с pylint
+```
+smartyard/bin/pylint app.py
+smartyard/bin/pylint smartyard
+```

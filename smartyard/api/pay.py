@@ -1,3 +1,4 @@
+"""Модуль описания эндпойнтов ветки /pay API"""
 import logging
 import sys
 
@@ -13,6 +14,7 @@ pay_branch = Blueprint("pay", __name__, url_prefix="/pay")
 @access_verification
 @json_verification
 def prepare() -> Response:
+    """Подготовка к платежу"""
     phone = request.environ["USER_PHONE"]
     request_data = request.get_json() or {}
 
@@ -33,6 +35,7 @@ def prepare() -> Response:
 @access_verification
 @json_verification
 def process() -> Response:
+    """Обработка платежа"""
     request_data = request.get_json() or {}
 
     logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)

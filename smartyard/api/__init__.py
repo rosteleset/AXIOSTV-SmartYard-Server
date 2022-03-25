@@ -1,3 +1,4 @@
+"""Пакет описания API сервиса"""
 import json
 
 from flask import Blueprint, Response
@@ -18,7 +19,7 @@ __all__ = ["api"]
 
 api = Blueprint("api", __name__, url_prefix="/api")
 
-for branch in {
+for branch in (
     root_branch,
     address_branch,
     cctv_branch,
@@ -30,12 +31,13 @@ for branch in {
     pay_branch,
     sip_branch,
     user_branch,
-}:
+):
     api.register_blueprint(branch)
 
 
 @api.errorhandler(401)
 def unauthorized(error) -> Response:
+    """Обработчик ошибки Unauthorized, HTTP код 401"""
     return Response(
         response=json.dumps(error.description),
         status=401,
@@ -45,6 +47,7 @@ def unauthorized(error) -> Response:
 
 @api.errorhandler(403)
 def forbidden(error):
+    """Обработчик ошибки Forbidden, HTTP код 403"""
     return Response(
         response=json.dumps(error.description),
         status=403,
@@ -54,6 +57,7 @@ def forbidden(error):
 
 @api.errorhandler(404)
 def not_found(error):
+    """Обработчик ошибки Not Found, HTTP код 404"""
     return Response(
         response=json.dumps(error.description),
         status=404,
@@ -62,7 +66,8 @@ def not_found(error):
 
 
 @api.errorhandler(410)
-def gone(error):
+def gone(_):
+    """Обработчик ошибки Gone, HTTP код 410"""
     return Response(
         response=json.dumps({"error": "авторизация отозвана"}),
         status=410,
@@ -72,6 +77,7 @@ def gone(error):
 
 @api.errorhandler(422)
 def unprocessable_entity(error):
+    """Обработчик ошибки Unprocessable Entity, HTTP код 422"""
     return Response(
         response=json.dumps(error.description),
         status=422,
@@ -80,7 +86,8 @@ def unprocessable_entity(error):
 
 
 @api.errorhandler(424)
-def failed_dependency(error):
+def failed_dependency(_):
+    """Обработчик ошибки Failed Dependency, HTTP код 424"""
     return Response(
         response=json.dumps({"error": "неверный токен"}),
         status=424,
@@ -89,7 +96,8 @@ def failed_dependency(error):
 
 
 @api.errorhandler(429)
-def too_many_requests(error):
+def too_many_requests(_):
+    """Обработчик ошибки Too Many Requests, HTTP код 429"""
     return Response(
         response=json.dumps(
             {

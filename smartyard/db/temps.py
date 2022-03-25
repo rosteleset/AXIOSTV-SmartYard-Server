@@ -1,9 +1,17 @@
+"""Модуль описания таблицы, хранящей коды аутентификации"""
 from smartyard.db.database import create_db_connection
 
 _db = create_db_connection()
 
 
 class Temps(_db.Model):
+    """Таблица с кодами для аутентификации
+
+    Колонки:
+    - userphone - номер телефона
+    - smscode - код для SMS
+    """
+
     __tablename__ = "temps"
 
     userphone = _db.Column(_db.BigInteger, primary_key=True)
@@ -12,6 +20,3 @@ class Temps(_db.Model):
     def __init__(self, userphone, smscode):
         self.userphone = userphone
         self.smscode = smscode
-
-    def __repr__(self):
-        return f""

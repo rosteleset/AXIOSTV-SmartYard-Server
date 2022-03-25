@@ -1,3 +1,4 @@
+"""Модуль описания эндпойнтов ветки /ext API"""
 from flask import Blueprint
 
 from smartyard.utils import access_verification, json_verification
@@ -9,6 +10,7 @@ frs_branch = Blueprint("frs", __name__, url_prefix="/frs")
 @access_verification
 @json_verification
 def dislike() -> str:
+    """Дизлайкнуть фото (чужое, ложное срабатывание, разонравилось)"""
     return "Hello, World!"
 
 
@@ -16,6 +18,7 @@ def dislike() -> str:
 @access_verification
 @json_verification
 def like() -> str:
+    """Лайкнуть фото для использования при распозновании"""
     return "Hello, World!"
 
 
@@ -23,4 +26,5 @@ def like() -> str:
 @access_verification
 @json_verification
 def list_faces() -> str:
+    """Список фотографий"""
     return "Hello, World!"

@@ -1,3 +1,4 @@
+"""Пакет с сервисом для работы с системой Умный двор"""
 from typing import Tuple
 
 from flask import Flask
@@ -9,6 +10,7 @@ from smartyard.db import create_db_connection
 
 
 def create_app(config: Config) -> Tuple[Flask, Migrate]:
+    """Создание Flask-приложения для обработки запросов API"""
     app = Flask(__name__)
 
     app.config.update(
@@ -23,9 +25,9 @@ def create_app(config: Config) -> Tuple[Flask, Migrate]:
         }
     )
 
-    db = create_db_connection()
-    db.init_app(app)
-    migrate = Migrate(app, db)
+    database = create_db_connection()
+    database.init_app(app)
+    migrate = Migrate(app, database)
 
     app.register_blueprint(api)
     return app, migrate

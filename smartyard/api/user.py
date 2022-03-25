@@ -1,3 +1,4 @@
+"""Модуль описания эндпойнтов ветки /user API"""
 import re
 
 from flask import Blueprint, Response, abort, current_app, jsonify, request
@@ -14,12 +15,7 @@ user_branch = Blueprint("user", __name__, url_prefix="/user")
 @access_verification
 @json_verification(("login", "password"))
 def add_my_phone() -> Response:
-    request_data = request.get_json() or {}
-    login = request_data.get("login")
-    password = request_data.get("password")
-    comment = request_data.get("comment", "")
-    notification = request_data.get("notification", "")
-
+    """Добавить свой телефон"""
     return Response(status=204, mimetype="application/json")
 
 
@@ -27,8 +23,8 @@ def add_my_phone() -> Response:
 @access_verification
 @json_verification(("version", "platform"))
 def app_version() -> Response:
+    """Версию приложения"""
     request_data = request.get_json() or {}
-    version = request_data.get("version")
     platform = request_data.get("platform")
 
     if platform not in ("android", "ios"):
@@ -46,6 +42,7 @@ def app_version() -> Response:
 @user_branch.route("/confirmCode", methods=["POST"])
 @json_verification(("userPhone",))
 def confirm_code() -> Response:
+    """Подтвердить телефон"""
     request_data = request.get_json() or {}
     user_phone = request_data.get("userPhone", "")
     sms_code = request_data.get("smsCode", "")
@@ -64,7 +61,7 @@ def confirm_code() -> Response:
         )
 
     try:
-        access_token = UsersBank.save_user(
+        access_token = UsersBank().save_user(
             user_phone=int(user_phone),
             sms_code=int(sms_code),
             name=name,
@@ -82,26 +79,26 @@ def confirm_code() -> Response:
                 "message": "Пин-код введен неверно",
             },
         )
-    else:
-        return jsonify(
-            {
-                "code": 200,
-                "name": "OK",
-                "message": "Хорошо",
-                "data": {
-                    "accessToken": access_token,
-                    "names": {
-                        "name": name,
-                        "patronymic": patronymic,
-                    },
+    return jsonify(
+        {
+            "code": 200,
+            "name": "OK",
+            "message": "Хорошо",
+            "data": {
+                "accessToken": access_token,
+                "names": {
+                    "name": name,
+                    "patronymic": patronymic,
                 },
-            }
-        )
+            },
+        }
+    )
 
 
 @user_branch.route("/getPaymentsList", methods=["POST"])
 @access_verification
 def get_payments_list():
+    """Список договоров для оплаты"""
     config = current_app.config["CONFIG"]
     return jsonify(Billing(config.BILLING_URL).get_list(request.environ["USER_PHONE"]))
 
@@ -109,6 +106,7 @@ def get_payments_list():
 @user_branch.route("/notification", methods=["POST"])
 @access_verification
 def notification():
+    """Управление уведомлениями"""
     money = "t"
     enable = "t"
     return jsonify(
@@ -124,19 +122,25 @@ def notification():
 @user_branch.route("/ping", methods=["POST"])
 @access_verification
 def ping():
+    """Проверка доступности сервиса"""
     return Response(status=204, mimetype="application/json")
 
 
 @user_branch.route("/pushTokens", methods=["POST"])
 @access_verification
 def push_tokens():
+    """Пуш токены для проверки"""
     return jsonify(
         {
             "code": 200,
             "name": "OK",
             "message": "Хорошо",
             "data": {
-                "pushToken": "fnTGJUfJTIC61WfSKWHP_N:APA91bGbnS3ck-cEWO0aj4kExZLsmGGmhziTu2lfyvjIpbmia5ahfL4WlJrr8DOjcDMUo517HUjxH4yZm0m5tF89CssdSsmO6IjcrS1U_YM3ue2187rc9ow9rS0xL8Q48vwz2e6j42l1",
+                "pushToken": (
+                    "fnTGJUfJTIC61WfSKWHP_N:APA91bGbnS3ck-cEWO0aj4kExZLsmGGmhziTu2l"
+                    "fyvjIpbmia5ahfL4WlJrr8DOjcDMUo517HUjxH4yZm0m5tF89CssdSsmO6Ijcr"
+                    "S1U_YM3ue2187rc9ow9rS0xL8Q48vwz2e6j42l1"
+                ),
                 "voipToken": "off",
             },
         }
@@ -147,18 +151,14 @@ def push_tokens():
 @access_verification
 @json_verification(("platform",))
 def register_push_token():
-    request_data = request.get_json() or {}
-    platform = request_data.get("platform")
-    pushToken = request_data.get("pushToken")
-    voipToken = request_data.get("voipToken")
-    production = request_data.get("production")
-
+    """Зарегистрировать токен(ы) для пуш уведомлений"""
     return Response(status=204, mimetype="application/json")
 
 
 @user_branch.route("/requestCode", methods=["POST"])
 @json_verification(("userPhone",))
 def request_code():
+    """Запросить код подтверждения"""
     request_data = request.get_json() or {}
     user_phone = request_data.get("userPhone", "")
     if not re.match(r"^\d{11}$", user_phone):
@@ -171,7 +171,7 @@ def request_code():
             },
         )
     sms_code = UsersBank().generate_code(int(user_phone))
-    Kannel(current_app.config["CONFIG"]).send_code(sms_code)
+    Kannel(current_app.config["CONFIG"]).send_code(int(user_phone), sms_code)
 
     return Response(status=204, mimetype="application/json")
 
@@ -180,10 +180,8 @@ def request_code():
 @access_verification
 @json_verification(("contract",))
 def restore():
+    """Восстановить доступ в ЛК"""
     request_data = request.get_json() or {}
-    contract = request_data.get("contract")
-    comment = request_data.get("comment")
-    notification = request_data.get("notification")
     contact_id = request_data.get("contactId")
     code = request_data.get("code")
 
@@ -211,11 +209,10 @@ def restore():
         print(f"Кто-то сделал POST запрос contactId и передал {contact_id}")
         return Response(status=204, mimetype="application/json")
     if not contact_id and code:
-        if code == code:  # TODO: Проверить странное условие
-            print(f"Кто-то сделал POST запрос code и передал {code}")
-            return Response(status=204, mimetype="application/json")
-        else:
-            abort(403, {"code": 403, "name": "Forbidden", "message": "Запрещено"})
+        print(f"Кто-то сделал POST запрос code и передал {code}")
+        return Response(status=204, mimetype="application/json")
+        # TODO: Написать условия для ошибки Forbidden, 403
+        # abort(403, {"code": 403, "name": "Forbidden", "message": "Запрещено"})
     # TODO: Нужен вариант по умлочанию: пока такой
     return Response(status=204, mimetype="application/json")
 
@@ -224,14 +221,13 @@ def restore():
 @access_verification
 @json_verification(("name",))
 def send_name():
-    request_data = request.get_json() or {}
-    name = request_data.get("name")
-    patronymic = request_data.get("patronymic")
+    """Установить обращение"""
     return Response(status=204, mimetype="application/json")
 
 
 @user_branch.route("/getBillingList", methods=["POST"])
 @access_verification
 def get_billing_list():
+    """???"""
     config = current_app.config["CONFIG"]
     return jsonify(Billing(config.BILLING_URL).get_list(request.environ["USER_PHONE"]))

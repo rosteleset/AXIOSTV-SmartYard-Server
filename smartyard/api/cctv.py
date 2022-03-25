@@ -1,7 +1,7 @@
-from flask import Blueprint, Response, jsonify, request
+"""Модуль описания эндпойнтов ветки /cctv API"""
+from flask import Blueprint, Response, jsonify
 
-from smartyard.utils import (access_verification, generate_video_token,
-                             json_verification)
+from smartyard.utils import access_verification, json_verification
 
 cctv_branch = Blueprint("cctv", __name__, url_prefix="/cctv")
 
@@ -9,9 +9,8 @@ cctv_branch = Blueprint("cctv", __name__, url_prefix="/cctv")
 @cctv_branch.route("/all", methods=["POST"])
 @access_verification
 @json_verification
-def all() -> Response:
-    strims = ["111111", "222222", "333333"]
-    videotoken = generate_video_token(request.environ["USER_PHONE"], strims)
+def all_cameras() -> Response:
+    """Список всех доступных камер видеонаблюдения"""
     response = {
         "code": 200,
         "name": "OK",
@@ -138,6 +137,7 @@ def all() -> Response:
 @cctv_branch.route("/camMap", methods=["POST"])
 @access_verification
 def cam_map() -> Response:
+    """Список камер видеонаблюдения с указанием возможности распознования лица"""
     return jsonify(
         response={
             "code": 200,
@@ -189,6 +189,7 @@ def cam_map() -> Response:
 @access_verification
 @json_verification
 def overview() -> str:
+    """Список всех доступных камер видеонаблюдения"""
     return "Hello, World!"
 
 
@@ -196,6 +197,7 @@ def overview() -> str:
 @access_verification
 @json_verification
 def rec_download() -> str:
+    """Скачать запись"""
     return "Hello, World!"
 
 
@@ -203,6 +205,7 @@ def rec_download() -> str:
 @access_verification
 @json_verification
 def rec_prepare() -> str:
+    """Подготовить запись с камеры"""
     return "Hello, World!"
 
 
@@ -210,4 +213,5 @@ def rec_prepare() -> str:
 @access_verification
 @json_verification
 def youtube() -> str:
+    """Просмотр ролика на youtube"""
     return "Hello, World!"

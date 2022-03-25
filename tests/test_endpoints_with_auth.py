@@ -1,39 +1,8 @@
-import os
-
 import pytest
-from flask import Flask
-from flask.testing import FlaskClient, FlaskCliRunner
+from flask.testing import FlaskClient
 from pytest_mock import MockerFixture
 
-from smartyard import create_app
-from smartyard.config import get_config
 from smartyard.logic.users_bank import UsersBank
-
-
-@pytest.fixture
-def env_file() -> str:
-    return os.path.join(os.path.dirname(__file__), "data", "test.env")
-
-
-@pytest.fixture
-def app(env_file) -> Flask:
-    app, _ = create_app(get_config(env_file))
-    app.config.update(
-        {
-            "TESTING": True,
-        }
-    )
-    yield app
-
-
-@pytest.fixture
-def client(app) -> FlaskClient:
-    return app.test_client()
-
-
-@pytest.fixture
-def runner(app) -> FlaskCliRunner:
-    return app.test_cli_runner()
 
 
 endpoints = {
@@ -95,9 +64,9 @@ endpoints = {
 
 @pytest.mark.parametrize("method,url", endpoints)
 def test_with_auth_without_authorization(
-    client: FlaskClient, method: str, url: str
+    flask_client: FlaskClient, method: str, url: str
 ) -> None:
-    response = client.open(url, method=method.upper())
+    response = flask_client.open(url, method=method.upper())
     assert response.status_code == 422
     assert response.content_type == "application/json"
     assert response.get_json() == {
@@ -109,10 +78,10 @@ def test_with_auth_without_authorization(
 
 @pytest.mark.parametrize("method,url", endpoints)
 def test_with_auth_with_wrong_token(
-    client: FlaskClient, method: str, url: str, mocker: MockerFixture
+    flask_client: FlaskClient, method: str, url: str, mocker: MockerFixture
 ) -> None:
     mocker.patch.object(UsersBank, "search_by_uuid", return_value=None)
-    response = client.open(
+    response = flask_client.open(
         url, method=method.upper(), headers={"Authorization": "auth"}
     )
     assert response.status_code == 401

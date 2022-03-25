@@ -8,11 +8,11 @@ class Kannel:
     def __init__(self, config: Config) -> None:
         self._config = config
 
-    def send_code(self, phone: int, code: int):
+    def send_code(self, phone: int, code: int) -> None:
         try:
             sms_text = f"{self._config.KANNEL_TEXT}{code}"
             response = requests.get(
-                url=f"http://{self._config.KANNEL_HOST}:{self._config.KANNEL_PORT}/{self._config.KANNEL_PATH}",
+                f"http://{self._config.KANNEL_HOST}:{self._config.KANNEL_PORT}/{self._config.KANNEL_PATH}",
                 params=(
                     ("user", self._config.KANNEL_USER),
                     ("pass", self._config.KANNEL_PASS),

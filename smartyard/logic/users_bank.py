@@ -14,15 +14,6 @@ class UsersBank:
     def __init__(self) -> None:
         pass
 
-    def search_by_uuid(self, _uuid: str) -> int:
-        """Поиск номера телефона по uuid пользователя
-
-        Параметры:
-        - uuid - идентификатор пользователя
-        """
-        datebase = create_db_connection()
-        return datebase.session.query(Users.userphone).filter_by(uuid=_uuid).first()
-
     def save_user(
         self, user_phone: int, sms_code: int, name: str, patronymic: str, email: str
     ) -> str:

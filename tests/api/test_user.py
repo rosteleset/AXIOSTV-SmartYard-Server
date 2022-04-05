@@ -5,6 +5,8 @@ from flask.testing import FlaskClient
 from pytest_mock import MockerFixture
 
 from smartyard.exceptions import NotFoundCodeAndPhone, NotFoundCodesForPhone
+from smartyard.logic.user import User
+from smartyard.logic.users import Users
 from smartyard.logic.users_bank import UsersBank
 from smartyard.proxy import Billing, Kannel
 
@@ -21,9 +23,9 @@ add_my_phone_optional_fields = {"comment", "notification"}
     ),
 )
 def test_add_my_phone_not_enough_params(
-    flask_client: FlaskClient, fields: tuple, mocker: MockerFixture
+    flask_client: FlaskClient, fields: tuple, logic_user: User, mocker: MockerFixture
 ) -> None:
-    mocker.patch.object(UsersBank, "search_by_uuid", return_value=(79001234567,))
+    mocker.patch.object(Users, "user_by_uuid", return_value=logic_user)
     response = flask_client.post(
         "/api/user/addMyPhone",
         headers={"Authorization": "auth"},
@@ -48,9 +50,9 @@ def test_add_my_phone_not_enough_params(
     ),
 )
 def test_add_my_phone_full_required_params(
-    flask_client: FlaskClient, fields: tuple, mocker: MockerFixture
+    flask_client: FlaskClient, fields: tuple, logic_user: User, mocker: MockerFixture
 ) -> None:
-    mocker.patch.object(UsersBank, "search_by_uuid", return_value=(79001234567,))
+    mocker.patch.object(Users, "user_by_uuid", return_value=logic_user)
     response = flask_client.post(
         "/api/user/addMyPhone",
         headers={"Authorization": "auth"},
@@ -73,9 +75,9 @@ app_version_required_fields = {"version", "platform"}
     ),
 )
 def test_app_version_not_enough_params(
-    flask_client: FlaskClient, fields: tuple, mocker: MockerFixture
+    flask_client: FlaskClient, fields: tuple, logic_user: User, mocker: MockerFixture
 ) -> None:
-    mocker.patch.object(UsersBank, "search_by_uuid", return_value=(79001234567,))
+    mocker.patch.object(Users, "user_by_uuid", return_value=logic_user)
     response = flask_client.post(
         "/api/user/appVersion",
         headers={"Authorization": "auth"},
@@ -92,9 +94,9 @@ def test_app_version_not_enough_params(
 
 
 def test_app_version_wrong_platform(
-    flask_client: FlaskClient, mocker: MockerFixture
+    flask_client: FlaskClient, logic_user: User, mocker: MockerFixture
 ) -> None:
-    mocker.patch.object(UsersBank, "search_by_uuid", return_value=(79001234567,))
+    mocker.patch.object(Users, "user_by_uuid", return_value=logic_user)
     response = flask_client.post(
         "/api/user/appVersion",
         headers={"Authorization": "auth"},
@@ -115,9 +117,9 @@ def test_app_version_wrong_platform(
     ("android", "ios"),
 )
 def test_app_version_allowed_platform(
-    flask_client: FlaskClient, platform: tuple, mocker: MockerFixture
+    flask_client: FlaskClient, platform: tuple, logic_user: User, mocker: MockerFixture
 ) -> None:
-    mocker.patch.object(UsersBank, "search_by_uuid", return_value=(79001234567,))
+    mocker.patch.object(Users, "user_by_uuid", return_value=logic_user)
     response = flask_client.post(
         "/api/user/appVersion",
         headers={"Authorization": "auth"},
@@ -141,9 +143,9 @@ confirm_code_required_fields = {"userPhone", "smsCode"}
     ),
 )
 def test_confirm_code_not_enough_params(
-    flask_client: FlaskClient, fields: tuple, mocker: MockerFixture
+    flask_client: FlaskClient, fields: tuple, logic_user: User, mocker: MockerFixture
 ) -> None:
-    mocker.patch.object(UsersBank, "search_by_uuid", return_value=(79001234567,))
+    mocker.patch.object(Users, "user_by_uuid", return_value=logic_user)
     response = flask_client.post(
         "/api/user/confirmCode",
         headers={"Authorization": "auth"},
@@ -179,9 +181,9 @@ def test_confirm_code_not_enough_params(
     ),
 )
 def test_confirm_code_wrong_required_params(
-    flask_client: FlaskClient, fields: tuple, mocker: MockerFixture
+    flask_client: FlaskClient, fields: tuple, logic_user: User, mocker: MockerFixture
 ) -> None:
-    mocker.patch.object(UsersBank, "search_by_uuid", return_value=(79001234567,))
+    mocker.patch.object(Users, "user_by_uuid", return_value=logic_user)
     response = flask_client.post(
         "/api/user/confirmCode",
         headers={"Authorization": "auth"},
@@ -234,12 +236,13 @@ def test_confirm_code_wrong_required_params(
     exception: Exception,
     exception_args: dict,
     excpected: dict,
+    logic_user: User,
     mocker: MockerFixture,
 ) -> None:
     def __save_user(*args, **kwargs):
         raise exception(**exception_args)
 
-    mocker.patch.object(UsersBank, "search_by_uuid", return_value=(79001234567,))
+    mocker.patch.object(Users, "user_by_uuid", return_value=logic_user)
     mocker.patch.object(UsersBank, "save_user", __save_user)
 
     response = flask_client.post(
@@ -259,7 +262,9 @@ def test_confirm_code_wrong_required_params(
     assert response.get_json() == excpected["content"]
 
 
-def test_confirm_code(flask_client: FlaskClient, mocker: MockerFixture) -> None:
+def test_confirm_code(
+    flask_client: FlaskClient, logic_user: User, mocker: MockerFixture
+) -> None:
     token = "token"
     json_data = {
         "userPhone": "12345678901",
@@ -272,7 +277,7 @@ def test_confirm_code(flask_client: FlaskClient, mocker: MockerFixture) -> None:
     def __save_user(*args, **kwargs):
         return token
 
-    mocker.patch.object(UsersBank, "search_by_uuid", return_value=(79001234567,))
+    mocker.patch.object(Users, "user_by_uuid", return_value=logic_user)
     mocker.patch.object(UsersBank, "save_user", __save_user)
 
     response = flask_client.post(
@@ -298,8 +303,10 @@ def test_confirm_code(flask_client: FlaskClient, mocker: MockerFixture) -> None:
     }
 
 
-def test_get_payments_list(flask_client: FlaskClient, mocker: MockerFixture) -> None:
-    mocker.patch.object(UsersBank, "search_by_uuid", return_value=(79001234567,))
+def test_get_payments_list(
+    flask_client: FlaskClient, logic_user: User, mocker: MockerFixture
+) -> None:
+    mocker.patch.object(Users, "user_by_uuid", return_value=logic_user)
     mocker.patch.object(Billing, "get_list", return_value={"response": "response"})
 
     response = flask_client.post(
@@ -312,8 +319,10 @@ def test_get_payments_list(flask_client: FlaskClient, mocker: MockerFixture) -> 
     assert response.get_json() == {"response": "response"}
 
 
-def test_notification(flask_client: FlaskClient, mocker: MockerFixture) -> None:
-    mocker.patch.object(UsersBank, "search_by_uuid", return_value=(79001234567,))
+def test_notification(
+    flask_client: FlaskClient, logic_user: User, mocker: MockerFixture
+) -> None:
+    mocker.patch.object(Users, "user_by_uuid", return_value=logic_user)
     response = flask_client.post(
         "/api/user/notification",
         headers={"Authorization": "auth"},
@@ -323,8 +332,10 @@ def test_notification(flask_client: FlaskClient, mocker: MockerFixture) -> None:
     assert response.get_json()
 
 
-def test_ping(flask_client: FlaskClient, mocker: MockerFixture) -> None:
-    mocker.patch.object(UsersBank, "search_by_uuid", return_value=(79001234567,))
+def test_ping(
+    flask_client: FlaskClient, logic_user: User, mocker: MockerFixture
+) -> None:
+    mocker.patch.object(Users, "user_by_uuid", return_value=logic_user)
     response = flask_client.post(
         "/api/user/ping",
         headers={"Authorization": "auth"},
@@ -333,8 +344,10 @@ def test_ping(flask_client: FlaskClient, mocker: MockerFixture) -> None:
     assert response.content_type == "application/json"
 
 
-def test_push_tokens(flask_client: FlaskClient, mocker: MockerFixture) -> None:
-    mocker.patch.object(UsersBank, "search_by_uuid", return_value=(79001234567,))
+def test_push_tokens(
+    flask_client: FlaskClient, logic_user: User, mocker: MockerFixture
+) -> None:
+    mocker.patch.object(Users, "user_by_uuid", return_value=logic_user)
     response = flask_client.post(
         "/api/user/pushTokens",
         headers={"Authorization": "auth"},
@@ -411,9 +424,13 @@ def test_push_tokens(flask_client: FlaskClient, mocker: MockerFixture) -> None:
     ),
 )
 def test_register_push_token(
-    flask_client: FlaskClient, send_data: dict, expected: dict, mocker: MockerFixture
+    flask_client: FlaskClient,
+    send_data: dict,
+    expected: dict,
+    logic_user: User,
+    mocker: MockerFixture,
 ) -> None:
-    mocker.patch.object(UsersBank, "search_by_uuid", return_value=(79001234567,))
+    mocker.patch.object(Users, "user_by_uuid", return_value=logic_user)
     response = flask_client.post(
         "/api/user/registerPushToken",
         headers={"Authorization": "auth"},
@@ -496,9 +513,13 @@ def test_register_push_token(
     ),
 )
 def test_request_code(
-    flask_client: FlaskClient, send_data: dict, expected: dict, mocker: MockerFixture
+    flask_client: FlaskClient,
+    send_data: dict,
+    expected: dict,
+    logic_user: User,
+    mocker: MockerFixture,
 ) -> None:
-    mocker.patch.object(UsersBank, "search_by_uuid", return_value=(79001234567,))
+    mocker.patch.object(Users, "user_by_uuid", return_value=logic_user)
     mocker.patch.object(UsersBank, "generate_code", return_value=1234)
     mocker.patch.object(Kannel, "send_code", return_value=None)
 
@@ -576,9 +597,13 @@ def test_request_code(
     ),
 )
 def test_restore(
-    flask_client: FlaskClient, send_data: dict, expected: dict, mocker: MockerFixture
+    flask_client: FlaskClient,
+    send_data: dict,
+    expected: dict,
+    logic_user: User,
+    mocker: MockerFixture,
 ) -> None:
-    mocker.patch.object(UsersBank, "search_by_uuid", return_value=(79001234567,))
+    mocker.patch.object(Users, "user_by_uuid", return_value=logic_user)
     response = flask_client.post(
         "/api/user/restore",
         headers={"Authorization": "auth"},
@@ -625,9 +650,13 @@ def test_restore(
     ),
 )
 def test_send_name(
-    flask_client: FlaskClient, send_data: dict, expected: dict, mocker: MockerFixture
+    flask_client: FlaskClient,
+    send_data: dict,
+    expected: dict,
+    logic_user: User,
+    mocker: MockerFixture,
 ) -> None:
-    mocker.patch.object(UsersBank, "search_by_uuid", return_value=(79001234567,))
+    mocker.patch.object(Users, "user_by_uuid", return_value=logic_user)
     response = flask_client.post(
         "/api/user/sendName",
         headers={"Authorization": "auth"},
@@ -640,8 +669,10 @@ def test_send_name(
         assert response.get_json() == expected["content"]
 
 
-def test_get_billing_list(flask_client: FlaskClient, mocker: MockerFixture) -> None:
-    mocker.patch.object(UsersBank, "search_by_uuid", return_value=(79001234567,))
+def test_get_billing_list(
+    flask_client: FlaskClient, logic_user: User, mocker: MockerFixture
+) -> None:
+    mocker.patch.object(Users, "user_by_uuid", return_value=logic_user)
     mocker.patch.object(Billing, "get_list", return_value={"response": "response"})
 
     response = flask_client.post(

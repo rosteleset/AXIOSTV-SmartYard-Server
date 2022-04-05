@@ -1,12 +1,15 @@
 from flask.testing import FlaskClient
 from pytest_mock import MockerFixture
 
-from smartyard.logic.users_bank import UsersBank
+from smartyard.logic.user import User
+from smartyard.logic.users import Users
 from smartyard.proxy import Billing
 
 
-def test_prepare(flask_client: FlaskClient, mocker: MockerFixture) -> None:
-    mocker.patch.object(UsersBank, "search_by_uuid", return_value=(79001234567,))
+def test_prepare(
+    flask_client: FlaskClient, logic_user: User, mocker: MockerFixture
+) -> None:
+    mocker.patch.object(Users, "user_by_uuid", return_value=logic_user)
     mocker.patch.object(
         Billing, "create_invoice", return_value={"response": "response"}
     )
@@ -26,8 +29,10 @@ def test_prepare(flask_client: FlaskClient, mocker: MockerFixture) -> None:
     assert response.get_json() == {"response": "response"}
 
 
-def test_process(flask_client: FlaskClient, mocker: MockerFixture) -> None:
-    mocker.patch.object(UsersBank, "search_by_uuid", return_value=(79001234567,))
+def test_process(
+    flask_client: FlaskClient, logic_user: User, mocker: MockerFixture
+) -> None:
+    mocker.patch.object(Users, "user_by_uuid", return_value=logic_user)
     response = flask_client.post(
         "/api/pay/process",
         headers={"Authorization": "auth"},

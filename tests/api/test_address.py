@@ -5,7 +5,8 @@ from flask.testing import FlaskClient
 from pytest_mock import MockerFixture
 
 from smartyard.config import Config
-from smartyard.logic.users_bank import UsersBank
+from smartyard.logic.user import User
+from smartyard.logic.users import Users
 from smartyard.proxy import Billing
 
 access_fields = {"clientId", "expire", "flatId", "guestPhone"}
@@ -20,9 +21,9 @@ access_fields = {"clientId", "expire", "flatId", "guestPhone"}
     ),
 )
 def test_access_not_enough_params(
-    flask_client: FlaskClient, fields: tuple, mocker: MockerFixture
+    flask_client: FlaskClient, fields: tuple, logic_user: User, mocker: MockerFixture
 ) -> None:
-    mocker.patch.object(UsersBank, "search_by_uuid", return_value=(79001234567,))
+    mocker.patch.object(Users, "user_by_uuid", return_value=logic_user)
     response = flask_client.post(
         "/api/address/access",
         headers={"Authorization": "auth"},
@@ -38,8 +39,10 @@ def test_access_not_enough_params(
     }
 
 
-def test_access_full_params(flask_client: FlaskClient, mocker: MockerFixture) -> None:
-    mocker.patch.object(UsersBank, "search_by_uuid", return_value=(79001234567,))
+def test_access_full_params(
+    flask_client: FlaskClient, logic_user: User, mocker: MockerFixture
+) -> None:
+    mocker.patch.object(Users, "user_by_uuid", return_value=logic_user)
     response = flask_client.post(
         "/api/address/access",
         headers={"Authorization": "auth"},
@@ -51,9 +54,12 @@ def test_access_full_params(flask_client: FlaskClient, mocker: MockerFixture) ->
 
 
 def test_get_address_list(
-    flask_client: FlaskClient, test_config: Config, mocker: MockerFixture
+    flask_client: FlaskClient,
+    test_config: Config,
+    logic_user: User,
+    mocker: MockerFixture,
 ) -> None:
-    mocker.patch.object(UsersBank, "search_by_uuid", return_value=(79001234567,))
+    mocker.patch.object(Users, "user_by_uuid", return_value=logic_user)
     mocker.patch.object(
         Billing, "get_address_list", return_value={"response": "response"}
     )
@@ -66,8 +72,10 @@ def test_get_address_list(
     assert response.get_json() == {"response": "response"}
 
 
-def test_get_settings_list(flask_client: FlaskClient, mocker: MockerFixture) -> None:
-    mocker.patch.object(UsersBank, "search_by_uuid", return_value=(79001234567,))
+def test_get_settings_list(
+    flask_client: FlaskClient, logic_user: User, mocker: MockerFixture
+) -> None:
+    mocker.patch.object(Users, "user_by_uuid", return_value=logic_user)
     response = flask_client.post(
         "/api/address/getSettingsList",
         headers={"Authorization": "auth"},
@@ -78,9 +86,9 @@ def test_get_settings_list(flask_client: FlaskClient, mocker: MockerFixture) -> 
 
 
 def test_intercom_without_flat_id(
-    flask_client: FlaskClient, mocker: MockerFixture
+    flask_client: FlaskClient, logic_user: User, mocker: MockerFixture
 ) -> None:
-    mocker.patch.object(UsersBank, "search_by_uuid", return_value=(79001234567,))
+    mocker.patch.object(Users, "user_by_uuid", return_value=logic_user)
     response = flask_client.post(
         "/api/address/intercom",
         headers={"Authorization": "auth"},
@@ -97,9 +105,9 @@ def test_intercom_without_flat_id(
 
 
 def test_intercom_with_flat_id(
-    flask_client: FlaskClient, mocker: MockerFixture
+    flask_client: FlaskClient, logic_user: User, mocker: MockerFixture
 ) -> None:
-    mocker.patch.object(UsersBank, "search_by_uuid", return_value=(79001234567,))
+    mocker.patch.object(Users, "user_by_uuid", return_value=logic_user)
     response = flask_client.post(
         "/api/address/intercom",
         headers={"Authorization": "auth"},
@@ -111,8 +119,10 @@ def test_intercom_with_flat_id(
     assert response.get_json()
 
 
-def test_offices(flask_client: FlaskClient, mocker: MockerFixture) -> None:
-    mocker.patch.object(UsersBank, "search_by_uuid", return_value=(79001234567,))
+def test_offices(
+    flask_client: FlaskClient, logic_user: User, mocker: MockerFixture
+) -> None:
+    mocker.patch.object(Users, "user_by_uuid", return_value=logic_user)
     response = flask_client.post(
         "/api/address/offices",
         headers={"Authorization": "auth"},
@@ -125,9 +135,9 @@ def test_offices(flask_client: FlaskClient, mocker: MockerFixture) -> None:
 
 
 def test_open_door_without_domophone_id(
-    flask_client: FlaskClient, mocker: MockerFixture
+    flask_client: FlaskClient, logic_user: User, mocker: MockerFixture
 ) -> None:
-    mocker.patch.object(UsersBank, "search_by_uuid", return_value=(79001234567,))
+    mocker.patch.object(Users, "user_by_uuid", return_value=logic_user)
     response = flask_client.post(
         "/api/address/openDoor",
         headers={"Authorization": "auth"},
@@ -144,9 +154,9 @@ def test_open_door_without_domophone_id(
 
 
 def test_open_door_with_domophone_id(
-    flask_client: FlaskClient, mocker: MockerFixture
+    flask_client: FlaskClient, logic_user: User, mocker: MockerFixture
 ) -> None:
-    mocker.patch.object(UsersBank, "search_by_uuid", return_value=(79001234567,))
+    mocker.patch.object(Users, "user_by_uuid", return_value=logic_user)
     response = flask_client.post(
         "/api/address/openDoor",
         headers={"Authorization": "auth"},
@@ -157,8 +167,10 @@ def test_open_door_with_domophone_id(
     assert response.content_type == "application/json"
 
 
-def test_plog_without_flat_id(flask_client: FlaskClient, mocker: MockerFixture) -> None:
-    mocker.patch.object(UsersBank, "search_by_uuid", return_value=(79001234567,))
+def test_plog_without_flat_id(
+    flask_client: FlaskClient, logic_user: User, mocker: MockerFixture
+) -> None:
+    mocker.patch.object(Users, "user_by_uuid", return_value=logic_user)
     response = flask_client.post(
         "/api/address/plog",
         headers={"Authorization": "auth"},
@@ -174,8 +186,10 @@ def test_plog_without_flat_id(flask_client: FlaskClient, mocker: MockerFixture) 
     }
 
 
-def test_plog_with_flat_id(flask_client: FlaskClient, mocker: MockerFixture) -> None:
-    mocker.patch.object(UsersBank, "search_by_uuid", return_value=(79001234567,))
+def test_plog_with_flat_id(
+    flask_client: FlaskClient, logic_user: User, mocker: MockerFixture
+) -> None:
+    mocker.patch.object(Users, "user_by_uuid", return_value=logic_user)
     response = flask_client.post(
         "/api/address/plog",
         headers={"Authorization": "auth"},
@@ -188,9 +202,9 @@ def test_plog_with_flat_id(flask_client: FlaskClient, mocker: MockerFixture) -> 
 
 
 def test_plog_days_without_flat_id(
-    flask_client: FlaskClient, mocker: MockerFixture
+    flask_client: FlaskClient, logic_user: User, mocker: MockerFixture
 ) -> None:
-    mocker.patch.object(UsersBank, "search_by_uuid", return_value=(79001234567,))
+    mocker.patch.object(Users, "user_by_uuid", return_value=logic_user)
     response = flask_client.post(
         "/api/address/plogDays",
         headers={"Authorization": "auth"},
@@ -207,9 +221,9 @@ def test_plog_days_without_flat_id(
 
 
 def test_plog_days_with_flat_id(
-    flask_client: FlaskClient, mocker: MockerFixture
+    flask_client: FlaskClient, logic_user: User, mocker: MockerFixture
 ) -> None:
-    mocker.patch.object(UsersBank, "search_by_uuid", return_value=(79001234567,))
+    mocker.patch.object(Users, "user_by_uuid", return_value=logic_user)
     response = flask_client.post(
         "/api/address/plogDays",
         headers={"Authorization": "auth"},
@@ -222,9 +236,9 @@ def test_plog_days_with_flat_id(
 
 
 def test_register_qr_without_qr(
-    flask_client: FlaskClient, mocker: MockerFixture
+    flask_client: FlaskClient, logic_user: User, mocker: MockerFixture
 ) -> None:
-    mocker.patch.object(UsersBank, "search_by_uuid", return_value=(79001234567,))
+    mocker.patch.object(Users, "user_by_uuid", return_value=logic_user)
     response = flask_client.post(
         "/api/address/registerQR",
         headers={"Authorization": "auth"},
@@ -240,8 +254,10 @@ def test_register_qr_without_qr(
     }
 
 
-def test_register_qr_with_qr(flask_client: FlaskClient, mocker: MockerFixture) -> None:
-    mocker.patch.object(UsersBank, "search_by_uuid", return_value=(79001234567,))
+def test_register_qr_with_qr(
+    flask_client: FlaskClient, logic_user: User, mocker: MockerFixture
+) -> None:
+    mocker.patch.object(Users, "user_by_uuid", return_value=logic_user)
     response = flask_client.post(
         "/api/address/registerQR",
         headers={"Authorization": "auth"},
@@ -253,8 +269,10 @@ def test_register_qr_with_qr(flask_client: FlaskClient, mocker: MockerFixture) -
     assert response.get_json()
 
 
-def test_resend(flask_client: FlaskClient, mocker: MockerFixture) -> None:
-    mocker.patch.object(UsersBank, "search_by_uuid", return_value=(79001234567,))
+def test_resend(
+    flask_client: FlaskClient, logic_user: User, mocker: MockerFixture
+) -> None:
+    mocker.patch.object(Users, "user_by_uuid", return_value=logic_user)
     response = flask_client.post(
         "/api/address/resend",
         headers={"Authorization": "auth"},
@@ -264,8 +282,10 @@ def test_resend(flask_client: FlaskClient, mocker: MockerFixture) -> None:
     assert response.status_code == 200
 
 
-def test_reset_code(flask_client: FlaskClient, mocker: MockerFixture) -> None:
-    mocker.patch.object(UsersBank, "search_by_uuid", return_value=(79001234567,))
+def test_reset_code(
+    flask_client: FlaskClient, logic_user: User, mocker: MockerFixture
+) -> None:
+    mocker.patch.object(Users, "user_by_uuid", return_value=logic_user)
     response = flask_client.post(
         "/api/address/resetCode",
         headers={"Authorization": "auth"},
@@ -275,8 +295,10 @@ def test_reset_code(flask_client: FlaskClient, mocker: MockerFixture) -> None:
     assert response.status_code == 200
 
 
-def test_get_hcs_list(flask_client: FlaskClient, mocker: MockerFixture) -> None:
-    mocker.patch.object(UsersBank, "search_by_uuid", return_value=(79001234567,))
+def test_get_hcs_list(
+    flask_client: FlaskClient, logic_user: User, mocker: MockerFixture
+) -> None:
+    mocker.patch.object(Users, "user_by_uuid", return_value=logic_user)
     response = flask_client.post(
         "/api/address/getHcsList",
         headers={"Authorization": "auth"},

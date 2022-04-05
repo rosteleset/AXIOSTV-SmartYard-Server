@@ -5,6 +5,7 @@ from typing import Callable, Iterable, Union
 
 from flask import abort, request
 
+from smartyard.logic.users import Users
 from smartyard.logic.users_bank import UsersBank
 
 
@@ -23,13 +24,13 @@ def access_verification(endpoint: Callable):
                     "message": "Отсутствует токен авторизации",
                 },
             )
-        user = UsersBank().search_by_uuid(auth_key[7:])
+        user = Users().user_by_uuid(auth_key[7:])
         if not user:
             abort(
                 401,
                 {"code": 401, "name": "Не авторизован", "message": "Не авторизован"},
             )
-        request.environ["USER_PHONE"] = user[0]
+        request.environ["USER_PHONE"] = user.userphone
         return endpoint(*args, **kwargs)
 
     return _wrapper

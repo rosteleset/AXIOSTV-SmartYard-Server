@@ -2,7 +2,7 @@ import pytest
 from flask.testing import FlaskClient
 from pytest_mock import MockerFixture
 
-from smartyard.logic.users_bank import UsersBank
+from smartyard.logic.users import Users
 
 endpoints = {
     ("post", "/api/address/access"),
@@ -79,7 +79,7 @@ def test_with_auth_without_authorization(
 def test_with_auth_with_wrong_token(
     flask_client: FlaskClient, method: str, url: str, mocker: MockerFixture
 ) -> None:
-    mocker.patch.object(UsersBank, "search_by_uuid", return_value=None)
+    mocker.patch.object(Users, "user_by_uuid", return_value=None)
     response = flask_client.open(
         url, method=method.upper(), headers={"Authorization": "auth"}
     )

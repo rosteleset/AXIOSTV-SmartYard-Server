@@ -73,12 +73,3 @@ class UsersBank:
             {"videotoken": token, "vttime": datetime.now(), "strims": strims}
         )
         datebase.session.commit()
-
-    def get_users_by_videotoken(self, token: str):
-        """Поиск пользователей по токену для видео-потоков
-
-        Параметры:
-        - token - токен для аутентификации при просмотре видео
-        """
-        datebase = create_db_connection()
-        return datebase.session.query(Users).where(Users.videotoken == token)

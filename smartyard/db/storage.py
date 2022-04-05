@@ -39,6 +39,14 @@ class Storage:
         """
         return self.datebase.session.query(Users).filter_by(userphone=phone).first()
 
+    def user_by_video_token(self, token: str) -> Users:
+        """Поиск номера телефона по uuid пользователя
+
+        Параметры:
+        - token - уникальный идентификатор для доступа к видеопотокам
+        """
+        return self.datebase.session.query(Users).filter_by(videotoken=token).first()
+
     def auth_by_phone_and_code(self, phone: int, code: int) -> Temps:
         """Проверка аутенификации
 

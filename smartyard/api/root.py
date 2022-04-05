@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 
 from flask import Blueprint, Response, abort, current_app, request
 
-from smartyard.logic.users_bank import UsersBank
+from smartyard.logic.users import Users
 
 root_branch = Blueprint("accessfl", __name__)
 
@@ -27,7 +27,7 @@ def accessfl() -> Response:
     )
     users = [
         user
-        for user in UsersBank().get_users_by_videotoken(token)
+        for user in Users().user_by_video_token(token)
         if user and user.vttime >= extime and name in user.strims
     ]
 

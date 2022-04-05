@@ -35,6 +35,15 @@ class Users:
         user = db.Storage().user_by_phone(phone)
         return User(**user.as_dict()) if user else None
 
+    def user_by_video_token(self, token: str) -> User:
+        """Поиск пользователя по номеру телефона
+
+        Параметры:
+        - token - уникальный идентификатор для доступа к видеопотокам
+        """
+        user = db.Storage().user_by_video_token(token)
+        return User(**user.as_dict()) if user else None
+
     def save_user(self, user: User) -> User:
         """Сохранение пользователя в базе
 

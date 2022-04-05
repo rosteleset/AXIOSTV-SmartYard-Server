@@ -5,8 +5,8 @@ import pytest
 from flask.testing import FlaskClient
 from pytest_mock import MockerFixture
 
-from smartyard.db.users import Users
-from smartyard.logic.users_bank import UsersBank
+from smartyard.logic.user import User
+from smartyard.logic.users import Users
 
 
 @pytest.mark.parametrize(
@@ -16,15 +16,15 @@ from smartyard.logic.users_bank import UsersBank
             "token",
             "stream",
             (
-                Users(
-                    uuid.uuid4(),
-                    79001234567,
-                    "User",
-                    "",
-                    "",
-                    "token",
-                    datetime.now() + timedelta(minutes=1),
-                    ["stream"],
+                User(
+                    userphone=79001234567,
+                    name="User",
+                    patronymic="",
+                    email="",
+                    uuid=uuid.uuid4(),
+                    videotoken="token",
+                    vttime=datetime.now() + timedelta(minutes=1),
+                    strims=["stream"],
                 ),
             ),
             {
@@ -35,15 +35,15 @@ from smartyard.logic.users_bank import UsersBank
             "token",
             "stream2",
             (
-                Users(
-                    uuid.uuid4(),
-                    79001234567,
-                    "User",
-                    "",
-                    "",
-                    "token",
-                    datetime.now() + timedelta(minutes=1),
-                    ["stream", "stream2", "stream3"],
+                User(
+                    userphone=79001234567,
+                    name="User",
+                    patronymic="",
+                    email="",
+                    uuid=uuid.uuid4(),
+                    videotoken="token",
+                    vttime=datetime.now() + timedelta(minutes=1),
+                    strims=["stream", "stream2", "stream3"],
                 ),
             ),
             {
@@ -54,15 +54,15 @@ from smartyard.logic.users_bank import UsersBank
             "token",
             "stream2",
             (
-                Users(
-                    uuid.uuid4(),
-                    79001234567,
-                    "User",
-                    "",
-                    "",
-                    "token",
-                    datetime.now() + timedelta(minutes=1),
-                    ["stream"],
+                User(
+                    userphone=79001234567,
+                    name="User",
+                    patronymic="",
+                    email="",
+                    uuid=uuid.uuid4(),
+                    videotoken="token",
+                    vttime=datetime.now() + timedelta(minutes=1),
+                    strims=["stream"],
                 ),
             ),
             {
@@ -97,7 +97,7 @@ def test_accessfl(
     expected: dict,
     mocker: MockerFixture,
 ) -> None:
-    mocker.patch.object(UsersBank, "get_users_by_videotoken", return_value=users)
+    mocker.patch.object(Users, "user_by_video_token", return_value=users)
     response = flask_client.get(f"/api/accessfl?token={token}&name={stream}")
     assert response.status_code == expected.get("status_code")
     if expected.get("content"):

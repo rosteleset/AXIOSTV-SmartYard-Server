@@ -21,11 +21,9 @@ class Billing:
         Параметры:
         - phone - телефон в виде целого числа
         """
-        return requests.post(
-            self._generate_url("getaddresslist"),
-            headers={"Content-Type": "application/json"},
-            data=json.dumps({"phone": phone}),
-        ).json()
+        return self._make_json_request(
+            self._generate_url("getaddresslist"), {"phone": phone}
+        )
 
     def create_invoice(self, login: str, amount: str, phone: str) -> dict:
         """Запрос списка доступных адресов по номеру телефона
@@ -35,11 +33,10 @@ class Billing:
         - amount - сумма в виде строки
         - phone - номер телефона в виде строки
         """
-        return requests.post(
+        return self._make_json_request(
             self._generate_url("createinvoice"),
-            headers={"Content-Type": "application/json"},
-            data=json.dumps({"login": login, "amount": amount, "phone": phone}),
-        ).json()
+            {"login": login, "amount": amount, "phone": phone},
+        )
 
     def get_list(self, phone: int) -> dict:
         """Запрос списка счетов/платежей адресов по номеру телефона
@@ -47,11 +44,14 @@ class Billing:
         Параметры:
         - phone - телефон в виде целого числа
         """
-        return requests.post(
-            self._generate_url("getlist"),
-            headers={"Content-Type": "application/json"},
-            data=json.dumps({"phone": phone}),
-        ).json()
+        return self._make_json_request(self._generate_url("getlist"), {"phone": phone})
 
     def _generate_url(self, uri: str) -> str:
         return urllib.parse.urljoin(self._url, uri)
+
+    def _make_json_request(self, url: str, data: dict) -> dict:
+        return requests.post(
+            url,
+            headers={"Content-Type": "application/json"},
+            data=json.dumps(data),
+        ).json()

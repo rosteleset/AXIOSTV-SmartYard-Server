@@ -30,42 +30,46 @@
 yum install -y python36-virtualenv postgresql-server nginx supervisor
 ```
 
-## Переносим файл smartyard.ini в /etc/supervisord.d 
+## Переносим файл smartyard.ini в /etc/supervisord.d/
 
 ## Добавляем автозапуск postgresql-server nginx supervisor
 
 ## Стартуем postgresql-server nginx
 
-## Далее в терминале выполняем команды (из под root`а):
+## Подготовка проекта(из под root`а):
 ```bash
-cd /opt
+mkdir -p /opt/smartyard
 
-mkdir smartyard
+cd /opt/smartyard
 
-virtualenv-3.6 smartyard
+python3.6 -m venv venv
 
-smartyard/bin/pip install -r requirements.txt
-
-cd smartyard
+venv/bin/pip install -r requirements.txt
 
 mv example.env .env
+```
 
+## Создание базы, только перед первым запуском(из под root`а):
+```bash
 su - postgres
 
 psql -f db/init.sql
-
-exit
-
-export FLASK_APP=app.py
-
-bin/flask db init
-
-bin/flask db migrate
-
-bin/flask db upgrade
-
-./app.py
 ```
+
+## Подготовка(обновление) схемы в базе данных(из под root`а):
+```bash
+cd /opt/smartyard
+
+FLASK_APP=app.py venv/bin/flask db upgrade
+```
+
+## Ручной запуск сервиса(из под root`а):
+```bash
+cd /opt/smartyard
+
+venv/bin/python app.py
+```
+
 
 Основные настройки, в т.ч. подключение к базе данных (PG_...) и серверу kannel (KANNEL_), а также имя отправителя смс (поддерживается не всеми смс-агрегаторами) и текстовая строка перед 4-х значным кодом подтверждения (текст смс) находятся в файле .env и интуитвно понятны. Кроме того, необходимо настроить nginx, добавив в конфиг следующие строчки:
 

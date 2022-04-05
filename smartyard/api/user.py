@@ -5,7 +5,6 @@ from flask import Blueprint, Response, abort, current_app, jsonify, request
 
 from smartyard.exceptions import NotFoundCodeAndPhone, NotFoundCodesForPhone
 from smartyard.logic.users import Users
-from smartyard.logic.users_bank import UsersBank
 from smartyard.proxy import Billing, Kannel
 from smartyard.utils import access_verification, json_verification
 
@@ -62,7 +61,7 @@ def confirm_code() -> Response:
         )
 
     try:
-        access_token = UsersBank().save_user(
+        access_token = Users().create_user(
             user_phone=int(user_phone),
             sms_code=int(sms_code),
             name=name,

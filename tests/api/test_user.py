@@ -8,7 +8,6 @@ from smartyard.exceptions import NotFoundCodeAndPhone, NotFoundCodesForPhone
 from smartyard.logic.auth import Auth
 from smartyard.logic.user import User
 from smartyard.logic.users import Users
-from smartyard.logic.users_bank import UsersBank
 from smartyard.proxy import Billing, Kannel
 
 add_my_phone_required_fields = {"login", "password"}
@@ -240,11 +239,11 @@ def test_confirm_code_wrong_required_params(
     logic_user: User,
     mocker: MockerFixture,
 ) -> None:
-    def __save_user(*args, **kwargs):
+    def __create_user(*args, **kwargs):
         raise exception(**exception_args)
 
     mocker.patch.object(Users, "user_by_uuid", return_value=logic_user)
-    mocker.patch.object(UsersBank, "save_user", __save_user)
+    mocker.patch.object(Users, "create_user", __create_user)
 
     response = flask_client.post(
         "/api/user/confirmCode",
@@ -275,11 +274,11 @@ def test_confirm_code(
         "email": "email",
     }
 
-    def __save_user(*args, **kwargs):
+    def __create_user(*args, **kwargs):
         return token
 
     mocker.patch.object(Users, "user_by_uuid", return_value=logic_user)
-    mocker.patch.object(UsersBank, "save_user", __save_user)
+    mocker.patch.object(Users, "create_user", __create_user)
 
     response = flask_client.post(
         "/api/user/confirmCode",

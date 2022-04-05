@@ -25,7 +25,4 @@ def logic_user() -> User:
 
 @pytest.fixture
 def logic_auth() -> Auth:
-    return Auth(
-        userphone=79001234567,
-        smscode=1234
-    )
+    return Auth(userphone=79001234567, smscode=1234)

@@ -2,10 +2,11 @@
 import dataclasses
 import secrets
 import uuid as std_uuid
-from typing import Union, Iterable
 from random import randint
+from typing import Iterable, Union
 
 from smartyard import db
+from smartyard.exceptions import NotFoundCodeAndPhone, NotFoundCodesForPhone
 from smartyard.logic.auth import Auth
 from smartyard.logic.user import User
 
@@ -65,7 +66,9 @@ class Users:
         auth = db.Temps(userphone=int(phone), smscode=randint(1000, 9999))
         return Auth(**storage.save(auth).as_dict())
 
-    def get_auth_by_phone_and_code(self, phone: Union[int, str], code: Union[int, str]) -> Auth:
+    def get_auth_by_phone_and_code(
+        self, phone: Union[int, str], code: Union[int, str]
+    ) -> Auth:
         """Проверка(поиск) кода авторизации с учетом номера телефона
 
         Параметры:
@@ -86,3 +89,47 @@ class Users:
         user = user.set_values(videotoken=secrets.token_hex(16), strims=strims)
         user = self.save_user(user)
         return user.videotoken
+
+    def create_user(
+        self, user_phone: int, sms_code: int, name: str, patronymic: str, email: str
+    ):
+        """Создать или обновить пользователя
+
+        Параметры:
+        - user_phone - номер телефона в целочисленном виде
+        - sms_code - код аутентификации в целочисленном виде
+        - name - имя пользователя
+        - patronymic - отчество пользователя
+        - email - электронный адрес пользователя
+        """
+        storage = db.Storage()
+        phone_codes = storage.auth_by_phone(phone=user_phone)
+        with_sms_code = [code for code in phone_codes if code.sms_code == sms_code]
+
+        if not phone_codes:
+            raise NotFoundCodesForPhone(user_phone)
+
+        if not with_sms_code:
+            raise NotFoundCodeAndPhone(user_phone, sms_code)
+
+        user = storage.user_by_phone(user_phone)
+        if not user:
+            user = User(
+                userphone=user_phone,
+                name=name,
+                patronymic=patronymic,
+                email=email,
+                uuid=std_uuid.uuid4(),
+                videotoken=None,
+                vttime=None,
+                strims=None,
+            )
+        else:
+            user = user.set_values(
+                name=name,
+                patronymic=patronymic,
+                email=email,
+            )
+
+        user = self.save_user(user)
+        return str(user.uuid)

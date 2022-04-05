@@ -47,6 +47,14 @@ class Storage:
         """
         return self.datebase.session.query(Users).filter_by(videotoken=token).first()
 
+    def auth_by_phone(self, phone: int) -> Temps:
+        """Проверка аутенификации
+
+        Параметры:
+        - phone - номер телефона
+        """
+        return self.datebase.session.query(Temps).filter_by(userphone=phone).first()
+
     def auth_by_phone_and_code(self, phone: int, code: int) -> Temps:
         """Проверка аутенификации
 
@@ -66,6 +74,4 @@ class Storage:
         Параметры:
         - phone - номер телефона
         """
-        self.datebase.session.query(Temps).filter_by(
-            userphone=phone
-        ).delete()
+        self.datebase.session.query(Temps).filter_by(userphone=phone).delete()

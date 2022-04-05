@@ -204,29 +204,25 @@ def test_save_user(
 
 
 @pytest.mark.parametrize(
-    "phone,code,mock,expected",
+    "phone,mock,expected",
     (
         (
             "89001234567",
-            "1234",
             Temps(userphone=89001234567, smscode=1234),
             Auth(userphone=89001234567, smscode=1234),
         ),
         (
             "89001234567",
-            1234,
             Temps(userphone=89001234567, smscode=1234),
             Auth(userphone=89001234567, smscode=1234),
         ),
         (
             89001234567,
-            "1234",
             Temps(userphone=89001234567, smscode=1234),
             Auth(userphone=89001234567, smscode=1234),
         ),
         (
             89001234567,
-            1234,
             Temps(userphone=89001234567, smscode=1234),
             Auth(userphone=89001234567, smscode=1234),
         ),
@@ -234,15 +230,15 @@ def test_save_user(
 )
 def test_set_auth_code(
     phone: Union[int, str],
-    code: Union[int, str],
     mock: Temps,
     expected: Auth,
     mocker: MockerFixture,
 ):
     mocker.patch.object(Storage, "save", return_value=mock)
+    mocker.patch.object(Storage, "clear_codes_for_phone", return_value=None)
     users = Users()
 
-    auth = users.set_auth_code(phone, code)
+    auth = users.set_auth_code(phone)
 
     assert auth == expected
 

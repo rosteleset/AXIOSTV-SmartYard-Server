@@ -2,6 +2,7 @@
 import dataclasses
 import uuid as std_uuid
 from typing import Union
+from random import randint
 
 from smartyard import db
 from smartyard.logic.auth import Auth
@@ -43,17 +44,18 @@ class Users:
         _user = db.Users(**dataclasses.asdict(user))
         return User(**db.Storage().save(_user).as_dict())
 
-    def set_auth_code(self, phone: Union[int, str], code: Union[int, str]):
+    def set_auth_code(self, phone: Union[int, str]) -> Auth:
         """Сохранение в базе кода аутентификации
 
         Параметры:
         - phone - номер телефона
-        - code - код для SMS
         """
-        auth = db.Temps(userphone=int(phone), smscode=int(code))
-        return Auth(**db.Storage().save(auth).as_dict())
+        storage = db.Storage()
+        storage.clear_codes_for_phone(phone)
+        auth = db.Temps(userphone=int(phone), smscode=randint(1000, 9999))
+        return Auth(**storage.save(auth).as_dict())
 
-    def get_auth_by_phone_and_code(self, phone: Union[int, str], code: Union[int, str]):
+    def get_auth_by_phone_and_code(self, phone: Union[int, str], code: Union[int, str]) -> Auth:
         """Проверка(поиск) кода авторизации с учетом номера телефона
 
         Параметры:

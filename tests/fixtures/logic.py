@@ -3,6 +3,7 @@ from datetime import datetime
 
 import pytest
 
+from smartyard.logic.auth import Auth
 from smartyard.logic.user import User
 
 
@@ -19,4 +20,12 @@ def logic_user() -> User:
         strims=[
             "stream_1",
         ],
+    )
+
+
+@pytest.fixture
+def logic_auth() -> Auth:
+    return Auth(
+        userphone=79001234567,
+        smscode=1234
     )

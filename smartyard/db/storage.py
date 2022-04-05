@@ -35,18 +35,29 @@ class Storage:
         """Поиск номера телефона по uuid пользователя
 
         Параметры:
-        - uuid - идентификатор пользователя
+        - phone - номер телефона
         """
         return self.datebase.session.query(Users).filter_by(userphone=phone).first()
 
     def auth_by_phone_and_code(self, phone: int, code: int) -> Temps:
-        """Поиск номера телефона по uuid пользователя
+        """Проверка аутенификации
 
         Параметры:
-        - uuid - идентификатор пользователя
+        - phone - номер телефона
+        - code - код аутентификации из SMS
         """
         return (
             self.datebase.session.query(Temps)
             .filter_by(userphone=phone, smscode=code)
             .first()
         )
+
+    def clear_codes_for_phone(self, phone: int) -> None:
+        """Чистка кодов аутентификации по номеру телефона
+
+        Параметры:
+        - phone - номер телефона
+        """
+        self.datebase.session.query(Temps).filter_by(
+            userphone=phone
+        ).delete()

@@ -60,22 +60,6 @@ class UsersBank:
 
         return access_token
 
-    def generate_code(self, user_phone: int) -> int:
-        """Формирование кода для аутентификации
-
-        Параметры:
-        - user_phone - номер телефона в целочисленном виде
-        """
-        datebase = create_db_connection()
-        sms_code = randint(1000, 9999)
-        temp_user = Temps(userphone=user_phone, smscode=sms_code)
-        datebase.session.query(Temps).filter_by(
-            userphone=int(user_phone)
-        ).delete()  # перед этим добавить проверку на время и ответ ошибкой!
-        datebase.session.add(temp_user)
-        datebase.session.commit()
-        return sms_code
-
     def update_video_token(self, user_phone: int, token: str, strims: Iterable):
         """Обновление данных о доступных видео-потоках
 

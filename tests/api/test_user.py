@@ -5,6 +5,7 @@ from flask.testing import FlaskClient
 from pytest_mock import MockerFixture
 
 from smartyard.exceptions import NotFoundCodeAndPhone, NotFoundCodesForPhone
+from smartyard.logic.auth import Auth
 from smartyard.logic.user import User
 from smartyard.logic.users import Users
 from smartyard.logic.users_bank import UsersBank
@@ -516,11 +517,12 @@ def test_request_code(
     flask_client: FlaskClient,
     send_data: dict,
     expected: dict,
+    logic_auth: Auth,
     logic_user: User,
     mocker: MockerFixture,
 ) -> None:
     mocker.patch.object(Users, "user_by_uuid", return_value=logic_user)
-    mocker.patch.object(UsersBank, "generate_code", return_value=1234)
+    mocker.patch.object(Users, "set_auth_code", return_value=logic_auth)
     mocker.patch.object(Kannel, "send_code", return_value=None)
 
     response = flask_client.post(

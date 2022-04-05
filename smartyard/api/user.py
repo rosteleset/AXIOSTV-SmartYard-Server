@@ -4,6 +4,7 @@ import re
 from flask import Blueprint, Response, abort, current_app, jsonify, request
 
 from smartyard.exceptions import NotFoundCodeAndPhone, NotFoundCodesForPhone
+from smartyard.logic.users import Users
 from smartyard.logic.users_bank import UsersBank
 from smartyard.proxy import Billing, Kannel
 from smartyard.utils import access_verification, json_verification
@@ -170,8 +171,8 @@ def request_code():
                 "message": "Необрабатываемый экземпляр",
             },
         )
-    sms_code = UsersBank().generate_code(int(user_phone))
-    Kannel(current_app.config["CONFIG"]).send_code(int(user_phone), sms_code)
+    auth = Users().set_auth_code(int(user_phone))
+    Kannel(current_app.config["CONFIG"]).send_code(auth.userphone, auth.smscode)
 
     return Response(status=204, mimetype="application/json")
 

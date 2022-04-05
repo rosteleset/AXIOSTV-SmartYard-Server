@@ -3,14 +3,12 @@ from pytest_mock import MockerFixture
 
 from smartyard.logic.user import User
 from smartyard.logic.users import Users
-from smartyard.logic.users_bank import UsersBank
 
 
 def test_all(
     flask_client: FlaskClient, logic_user: User, mocker: MockerFixture
 ) -> None:
     mocker.patch.object(Users, "user_by_uuid", return_value=logic_user)
-    mocker.patch.object(UsersBank, "update_video_token", return_value=None)
     response = flask_client.post(
         "/api/cctv/all",
         headers={"Authorization": "auth"},

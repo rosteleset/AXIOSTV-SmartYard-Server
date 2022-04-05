@@ -1,7 +1,8 @@
 """Модуль бизнес-логики работы с пользователями"""
 import dataclasses
+import secrets
 import uuid as std_uuid
-from typing import Union
+from typing import Union, Iterable
 from random import randint
 
 from smartyard import db
@@ -73,3 +74,15 @@ class Users:
         """
         auth = db.Storage().auth_by_phone_and_code(phone=phone, code=code)
         return Auth(**auth.as_dict()) if auth else None
+
+    def update_video_token(self, user_phone: int, strims: Iterable) -> str:
+        """Обновление данных о доступных видео-потоках
+
+        Параметры:
+        - user_phone - номер телефона в целочисленном виде
+        - strims - названия доступных потоков
+        """
+        user = self.user_by_phone(user_phone)
+        user = user.set_values(videotoken=secrets.token_hex(16), strims=strims)
+        user = self.save_user(user)
+        return user.videotoken

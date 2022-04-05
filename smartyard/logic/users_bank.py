@@ -59,17 +59,3 @@ class UsersBank:
         datebase.session.commit()
 
         return access_token
-
-    def update_video_token(self, user_phone: int, token: str, strims: Iterable):
-        """Обновление данных о доступных видео-потоках
-
-        Параметры:
-        - user_phone - номер телефона в целочисленном виде
-        - token - токен для аутентификации при просмотре видео
-        - strims - названия доступных потоков
-        """
-        datebase = create_db_connection()
-        datebase.session.query(Users).filter_by(userphone=int(user_phone)).update(
-            {"videotoken": token, "vttime": datetime.now(), "strims": strims}
-        )
-        datebase.session.commit()

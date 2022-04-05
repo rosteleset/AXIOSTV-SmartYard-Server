@@ -1,10 +1,10 @@
 """Модуль описания таблицы, хранящей коды аутентификации"""
-from smartyard.db.database import create_db_connection
+from smartyard.db.database import BaseModel, create_db_connection
 
 _db = create_db_connection()
 
 
-class Temps(_db.Model):
+class Temps(_db.Model, BaseModel):
     """Таблица с кодами для аутентификации
 
     Колонки:

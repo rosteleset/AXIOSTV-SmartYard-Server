@@ -5,12 +5,12 @@ from typing import Iterable
 
 from sqlalchemy.dialects.postgresql import UUID
 
-from smartyard.db.database import create_db_connection
+from smartyard.db.database import BaseModel, create_db_connection
 
 _db = create_db_connection()
 
 
-class Users(_db.Model):
+class Users(_db.Model, BaseModel):
     """Таблица с кодами для аутентификации
 
     Колонки:

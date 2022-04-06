@@ -30,13 +30,13 @@
 yum install -y python36-virtualenv postgresql-server nginx supervisor
 ```
 
-## Переносим файл smartyard.ini в /etc/supervisord.d/
+## Переносим файл smartyard.ini в /etc/supervisord.d 
 
 ## Добавляем автозапуск postgresql-server nginx supervisor
 
 ## Стартуем postgresql-server nginx
 
-## Подготовка проекта(из под root`а):
+## Подготовка проекта для первого запуска(из под root`а):
 ```bash
 mkdir -p /opt/smartyard
 
@@ -47,20 +47,38 @@ python3.6 -m venv venv
 venv/bin/pip install -r requirements.txt
 
 mv example.env .env
-```
 
-## Создание базы, только перед первым запуском(из под root`а):
-```bash
 su - postgres
 
 psql -f db/init.sql
+
+export FLASK_APP=app.py
+
+bin/flask db init
+
+bin/flask db migrate
+
+bin/flask db upgrade
+
+venv/bin/python app.py
 ```
 
 ## Подготовка(обновление) схемы в базе данных(из под root`а):
 ```bash
-cd /opt/smartyard
+
+su - postgres
+
+psql -f db/init.sql
+
+export FLASK_APP=app.py
+
+bin/flask db init
+
+bin/flask db migrate
 
 FLASK_APP=app.py venv/bin/flask db upgrade
+
+venv/bin/python app.py
 ```
 
 ## Ручной запуск сервиса(из под root`а):

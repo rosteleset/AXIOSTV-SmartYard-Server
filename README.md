@@ -43,7 +43,9 @@ smartyard/bin/pip install flask
 
 smartyard/bin/pip install psycopg2-binary
 
-smartyard/bin/pip install smartyard/bin/pip install
+smartyard/bin/pip install pycurl
+
+smartyard/bin/pip install firebase-admin
 
 smartyard/bin/pip install Flask-Migrate
 

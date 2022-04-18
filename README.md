@@ -27,7 +27,7 @@
 ## Необходимо выполнить следующие команды в терминале под рутом:
 
 ```bash
-yum install -y python36-virtualenv postgresql-server nginx supervisor
+yum install -y python36-virtualenv python36-devel libcurl-devel postgresql-server nginx supervisor
 ```
 
 ## Переносим файл smartyard.ini в /etc/supervisord.d 

@@ -3,14 +3,13 @@ import uuid as std_uuid
 from datetime import datetime
 from typing import Iterable
 
+from sqlalchemy import ARRAY, BigInteger, Column, DateTime, String
 from sqlalchemy.dialects.postgresql import UUID
 
-from smartyard.db.database import BaseModel, create_db_connection
-
-_db = create_db_connection()
+from smartyard.db.database import Base, BaseModel
 
 
-class Users(_db.Model, BaseModel):
+class Users(Base, BaseModel):
     """Таблица с кодами для аутентификации
 
     Колонки:
@@ -26,14 +25,14 @@ class Users(_db.Model, BaseModel):
 
     __tablename__ = "users"
 
-    uuid = _db.Column(UUID(as_uuid=True), primary_key=True, default=std_uuid.uuid4)
-    userphone = _db.Column(_db.BigInteger, index=True, unique=True)
-    name = _db.Column(_db.String(24))
-    patronymic = _db.Column(_db.String(24))
-    email = _db.Column(_db.String(60))
-    videotoken = _db.Column(_db.String(32))
-    vttime = _db.Column(_db.DateTime(timezone=False))
-    strims = _db.Column(_db.ARRAY(_db.String(10)))
+    uuid = Column(UUID(as_uuid=True), primary_key=True, default=std_uuid.uuid4)
+    userphone = Column(BigInteger, index=True, unique=True)
+    name = Column(String(24))
+    patronymic = Column(String(24))
+    email = Column(String(60))
+    videotoken = Column(String(32))
+    vttime = Column(DateTime(timezone=False))
+    strims = Column(ARRAY(String(10)))
 
     def __init__(
         self,
@@ -54,3 +53,15 @@ class Users(_db.Model, BaseModel):
         self.videotoken = videotoken
         self.vttime = vttime
         self.strims = strims
+
+    def __eq__(self, _users: object) -> bool:
+        return (
+            self.uuid == _users.uuid
+            and self.userphone == _users.userphone
+            and self.name == _users.name
+            and self.patronymic == _users.patronymic
+            and self.email == _users.email
+            and self.videotoken == _users.videotoken
+            and self.vttime == _users.vttime
+            and self.strims == _users.strims
+        )

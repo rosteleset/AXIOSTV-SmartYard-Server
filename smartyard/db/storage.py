@@ -2,6 +2,8 @@
 import uuid as std_uuid
 from typing import Union
 
+from sqlalchemy.orm import Session
+
 from smartyard.db.database import create_db_connection
 from smartyard.db.temps import Temps
 from smartyard.db.users import Users
@@ -10,8 +12,11 @@ from smartyard.db.users import Users
 class Storage:
     """Класс работы с объектами в базе данных"""
 
-    def __init__(self) -> None:
-        self.datebase = create_db_connection()
+    def __init__(self, session: Session = None) -> None:
+        self._session = session
+        if not self._session:
+            datebase = create_db_connection()
+            self._session = datebase.session
 
     def save(self, raw_object: Union[Temps, Users]):
         """Сохранение объекта в базе
@@ -19,9 +24,9 @@ class Storage:
         Параметры:
         - raw_object - объект Temps или Users
         """
-        with self.datebase.session.begin:
-            self.datebase.session.add(raw_object)
-            self.datebase.session.commit()
+        with self._session.begin:
+            self._session.add(raw_object)
+            self._session.commit()
 
     def user_by_uuid(self, _uuid: Union[str, std_uuid.UUID]) -> Users:
         """Поиск номера телефона по uuid пользователя
@@ -29,7 +34,7 @@ class Storage:
         Параметры:
         - uuid - идентификатор пользователя
         """
-        return self.datebase.session.query(Users).filter_by(uuid=_uuid).first()
+        return self._session.query(Users).filter_by(uuid=_uuid).first()
 
     def user_by_phone(self, phone: int) -> Users:
         """Поиск номера телефона по uuid пользователя
@@ -37,7 +42,7 @@ class Storage:
         Параметры:
         - phone - номер телефона
         """
-        return self.datebase.session.query(Users).filter_by(userphone=phone).first()
+        return self._session.query(Users).filter_by(userphone=phone).first()
 
     def user_by_video_token(self, token: str) -> Users:
         """Поиск номера телефона по uuid пользователя
@@ -45,7 +50,7 @@ class Storage:
         Параметры:
         - token - уникальный идентификатор для доступа к видеопотокам
         """
-        return self.datebase.session.query(Users).filter_by(videotoken=token).first()
+        return self._session.query(Users).filter_by(videotoken=token).first()
 
     def auth_by_phone(self, phone: int) -> Temps:
         """Проверка аутенификации
@@ -53,7 +58,7 @@ class Storage:
         Параметры:
         - phone - номер телефона
         """
-        return self.datebase.session.query(Temps).filter_by(userphone=phone).first()
+        return self._session.query(Temps).filter_by(userphone=phone).first()
 
     def auth_by_phone_and_code(self, phone: int, code: int) -> Temps:
         """Проверка аутенификации
@@ -63,9 +68,7 @@ class Storage:
         - code - код аутентификации из SMS
         """
         return (
-            self.datebase.session.query(Temps)
-            .filter_by(userphone=phone, smscode=code)
-            .first()
+            self._session.query(Temps).filter_by(userphone=phone, smscode=code).first()
         )
 
     def clear_codes_for_phone(self, phone: int) -> None:
@@ -74,4 +77,4 @@ class Storage:
         Параметры:
         - phone - номер телефона
         """
-        self.datebase.session.query(Temps).filter_by(userphone=phone).delete()
+        self._session.query(Temps).filter_by(userphone=phone).delete()

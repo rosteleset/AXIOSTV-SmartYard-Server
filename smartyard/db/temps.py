@@ -1,10 +1,10 @@
 """Модуль описания таблицы, хранящей коды аутентификации"""
-from smartyard.db.database import BaseModel, create_db_connection
+from sqlalchemy import BigInteger, Column, Integer
 
-_db = create_db_connection()
+from smartyard.db.database import Base, BaseModel
 
 
-class Temps(_db.Model, BaseModel):
+class Temps(Base, BaseModel):
     """Таблица с кодами для аутентификации
 
     Колонки:
@@ -14,9 +14,12 @@ class Temps(_db.Model, BaseModel):
 
     __tablename__ = "temps"
 
-    userphone = _db.Column(_db.BigInteger, primary_key=True)
-    smscode = _db.Column(_db.Integer, index=True, unique=True)
+    userphone = Column(BigInteger, primary_key=True)
+    smscode = Column(Integer, index=True, unique=True)
 
     def __init__(self, userphone, smscode):
         self.userphone = userphone
         self.smscode = smscode
+
+    def __eq__(self, _temp: "Temps") -> bool:
+        return self.userphone == _temp.userphone and self.smscode == _temp.smscode

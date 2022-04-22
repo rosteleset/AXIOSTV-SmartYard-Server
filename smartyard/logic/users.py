@@ -3,7 +3,7 @@ import dataclasses
 import secrets
 import uuid as std_uuid
 from random import randint
-from typing import Iterable, Optional, Union
+from typing import List, Optional, Union
 
 from smartyard import db
 from smartyard.exceptions import NotFoundCodeAndPhone, NotFoundCodesForPhone
@@ -80,7 +80,7 @@ class Users:
         )
         return Auth(**auth.as_dict()) if auth else None
 
-    def update_video_token(self, user_phone: int, strims: Iterable) -> Optional[str]:
+    def update_video_token(self, user_phone: int, strims: List[str]) -> Optional[str]:
         """Обновление данных о доступных видео-потоках
 
         Параметры:
@@ -88,9 +88,11 @@ class Users:
         - strims - названия доступных потоков
         """
         user = self.user_by_phone(int(user_phone))
-        user = user.set_values(videotoken=secrets.token_hex(16), strims=strims)
-        user = self.save_user(user)
-        return user.videotoken
+        if user:
+            user = user.set_values(videotoken=secrets.token_hex(16), strims=strims)
+            user = self.save_user(user)
+            return user.videotoken
+        return ""
 
     def create_user(
         self, user_phone: int, sms_code: int, name: str, patronymic: str, email: str
@@ -114,7 +116,7 @@ class Users:
         if not with_sms_code:
             raise NotFoundCodeAndPhone(user_phone, sms_code)
 
-        user = storage.user_by_phone(user_phone)
+        user = self.user_by_phone(user_phone)
         if not user:
             user = User(
                 userphone=user_phone,

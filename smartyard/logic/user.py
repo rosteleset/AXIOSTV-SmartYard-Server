@@ -2,7 +2,7 @@
 import uuid as std_uuid
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Optional
+from typing import List, Optional
 
 
 @dataclass(frozen=True)
@@ -27,7 +27,7 @@ class User:
     uuid: Optional[std_uuid.UUID] = None
     videotoken: Optional[str] = None
     vttime: Optional[datetime] = None
-    strims: Optional[list] = None
+    strims: Optional[List[str]] = None
 
     def set_values(
         self,
@@ -38,7 +38,7 @@ class User:
         uuid: Optional[std_uuid.UUID] = None,
         videotoken: Optional[str] = None,
         vttime: Optional[datetime] = None,
-        strims: Optional[list] = None,
+        strims: Optional[List[str]] = None,
     ) -> "User":
         """Обновить значение.
         Возвращает новый объект с новыми значениями

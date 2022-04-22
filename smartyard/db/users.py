@@ -36,7 +36,7 @@ class Users(Base, BaseModel):
 
     def __init__(
         self,
-        uuid: uuid,
+        uuid: std_uuid.UUID,
         userphone: int,
         name: str,
         patronymic: str,
@@ -54,7 +54,7 @@ class Users(Base, BaseModel):
         self.vttime = vttime
         self.strims = strims
 
-    def __eq__(self, _users: object) -> bool:
+    def __eq__(self, _users: "Users") -> bool:
         return (
             self.uuid == _users.uuid
             and self.userphone == _users.userphone

@@ -20,7 +20,7 @@ class Storage:
         Параметры:
         - raw_object - объект Temps или Users
         """
-        with self._session.begin:
+        with self._session:
             self._session.add(raw_object)
             self._session.commit()
 

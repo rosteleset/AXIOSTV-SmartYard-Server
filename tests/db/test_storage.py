@@ -2,7 +2,7 @@
 
 import uuid
 from datetime import datetime
-from typing import Iterable
+from typing import Iterable, Union
 
 import pytest
 import sqlalchemy.orm
@@ -454,3 +454,33 @@ def test_user_by_uuid(
     result = storage.user_by_uuid(user_uuid)
 
     assert result == expected_user
+
+
+@pytest.mark.parametrize(
+    "save_object",
+    (
+        Users(
+            uuid=expected_user_uuid,
+            userphone=79001234567,
+            name="User",
+            patronymic="-",
+            email="email@localhost",
+            videotoken="TOKEN",
+            vttime=datetime(2022, 12, 31, 23, 59, 59),
+            strims=[],
+        ),
+        Temps(79001234567, 1234),
+    ),
+)
+def test_save(
+    database_session: sqlalchemy.orm.Session,
+    save_object: Union[Temps, Users],
+):
+    """Тест сохранения объектов в базе"""
+    storage = Storage(database_session)
+
+    assert len(database_session.query(type(save_object)).all()) == 0
+
+    storage.save(save_object)
+
+    assert len(database_session.query(type(save_object)).all()) == 1

@@ -46,9 +46,9 @@ def confirm_code() -> Response:
     request_data = request.get_json() or {}
     user_phone = request_data.get("userPhone", "")
     sms_code = request_data.get("smsCode", "")
-    name = request_data.get("name")
-    patronymic = request_data.get("patronymic")
-    email = request_data.get("email")
+    name = request_data.get("name", "")
+    patronymic = request_data.get("patronymic", "")
+    email = request_data.get("email", "")
 
     if not re.match(r"^\d{11}$", user_phone) or not re.match(r"^\d{4}$", sms_code):
         abort(
@@ -61,7 +61,8 @@ def confirm_code() -> Response:
         )
 
     try:
-        access_token = Users().create_user(
+        session = current_app.extensions["sqlalchemy"].db.create_scoped_session()
+        access_token = Users(session).create_user(
             user_phone=int(user_phone),
             sms_code=int(sms_code),
             name=name,
@@ -170,7 +171,8 @@ def request_code():
                 "message": "Необрабатываемый экземпляр",
             },
         )
-    auth = Users().set_auth_code(int(user_phone))
+    session = current_app.extensions["sqlalchemy"].db.create_scoped_session()
+    auth = Users(session).set_auth_code(int(user_phone))
     Kannel(current_app.config["CONFIG"]).send_code(auth.userphone, auth.smscode)
 
     return Response(status=204, mimetype="application/json")

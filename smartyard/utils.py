@@ -2,7 +2,7 @@
 from functools import wraps
 from typing import Callable, Iterable, Union
 
-from flask import abort, request
+from flask import abort, current_app, request
 
 from smartyard.logic.users import Users
 
@@ -22,7 +22,8 @@ def access_verification(endpoint: Callable):
                     "message": "Отсутствует токен авторизации",
                 },
             )
-        user = Users().user_by_uuid(auth_key[7:])
+        session = current_app.extensions["sqlalchemy"].db.create_scoped_session()
+        user = Users(session).user_by_uuid(auth_key[7:])
         if not user:
             abort(
                 401,

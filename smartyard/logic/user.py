@@ -29,22 +29,29 @@ class User:
     vttime: Optional[datetime] = None
     strims: Optional[list] = None
 
-    def set_values(self, **kwargs: dict) -> "User":
+    def set_values(
+        self,
+        userphone: Optional[int] = None,
+        name: Optional[str] = None,
+        patronymic: Optional[str] = None,
+        email: Optional[str] = None,
+        uuid: Optional[std_uuid.UUID] = None,
+        videotoken: Optional[str] = None,
+        vttime: Optional[datetime] = None,
+        strims: Optional[list] = None,
+    ) -> "User":
         """Обновить значение.
         Возвращает новый объект с новыми значениями
 
         Параметры:
         - kwargs - dict с новыми значениями полей"""
-        values = {
-            "userphone": self.userphone,
-            "name": self.name,
-            "patronymic": self.patronymic,
-            "email": self.email,
-            "uuid": self.uuid,
-            "videotoken": self.videotoken,
-            "vttime": self.vttime,
-            "strims": self.strims,
-        }
-        kwargs = {key: item for key, item in kwargs.items() if key in values}
-        values.update(kwargs)
-        return User(**values)
+        return User(
+            userphone=userphone or self.userphone,
+            name=name or self.name,
+            patronymic=patronymic or self.patronymic,
+            email=email or self.email,
+            uuid=uuid or self.uuid,
+            videotoken=videotoken or self.videotoken,
+            vttime=vttime or self.vttime,
+            strims=strims or self.strims,
+        )

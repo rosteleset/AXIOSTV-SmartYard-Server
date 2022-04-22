@@ -1,3 +1,5 @@
+"""Модуль тестирования работы с базой данных"""
+
 import uuid
 from datetime import datetime
 from typing import Iterable
@@ -39,6 +41,7 @@ def test_clear_codes_for_phone(
     delete_phone: int,
     phones_after_clear: int,
 ):
+    """Тест очистки существующих смс-кодов по номеру телефона"""
     storage = Storage(database_session)
 
     for phone in exists_phones:
@@ -80,6 +83,7 @@ def test_auth_by_phone(
     auth_phone: int,
     expected_result: Temps,
 ):
+    """Тест атунтификации по номеру телефона"""
     storage = Storage(database_session)
 
     for phone in exists_phones:
@@ -143,6 +147,7 @@ def test_auth_by_phone_and_code(
     auth_code: int,
     expected_result: Temps,
 ):
+    """Тест атунтификации по номеру телефона и смс-коду"""
     storage = Storage(database_session)
 
     for phone in exists_phones:
@@ -241,6 +246,7 @@ def test_user_by_video_token(
     token: str,
     expected_result: Users,
 ):
+    """Тест поиска пользователя по токену для видеопотоков"""
     storage = Storage(database_session)
 
     for user in exists_users:
@@ -248,46 +254,6 @@ def test_user_by_video_token(
     database_session.commit()
 
     result = storage.user_by_video_token(token)
-
-    assert result == expected_result
-
-
-@pytest.mark.parametrize(
-    "exists_phones,auth_phone,expected_result",
-    (
-        ((Temps(79001234567, 1234),), 79001234567, Temps(79001234567, 1234)),
-        (
-            (
-                Temps(79001234567, 1234),
-                Temps(79001234568, 1235),
-                Temps(79001234569, 1236),
-            ),
-            79001234567,
-            Temps(79001234567, 1234),
-        ),
-        (
-            (
-                Temps(79001234568, 1235),
-                Temps(79001234569, 1236),
-            ),
-            79001234567,
-            None,
-        ),
-    ),
-)
-def test_auth_by_phone(
-    database_session: sqlalchemy.orm.Session,
-    exists_phones: Iterable,
-    auth_phone: int,
-    expected_result: Temps,
-):
-    storage = Storage(database_session)
-
-    for phone in exists_phones:
-        database_session.add(phone)
-    database_session.commit()
-
-    result = storage.auth_by_phone(auth_phone)
 
     assert result == expected_result
 
@@ -379,6 +345,7 @@ def test_user_by_phone(
     phone: int,
     expected_user: Users,
 ):
+    """Тест поиска пользователя по номеру телефона"""
     storage = Storage(database_session)
 
     for user in exists_users:
@@ -477,6 +444,7 @@ def test_user_by_uuid(
     user_uuid: str,
     expected_user: Users,
 ):
+    """Тест поиска пользователя по уникальному идентификатору"""
     storage = Storage(database_session)
 
     for user in exists_users:

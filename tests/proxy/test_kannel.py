@@ -1,3 +1,5 @@
+"""Модуль тестирования запросов к смс-агрегатору"""
+
 from typing import Any
 
 import pytest
@@ -10,6 +12,8 @@ from smartyard.proxy import Kannel
 
 
 class GetMock:
+    """Класс для мокирования пуе-запросов"""
+
     def __init__(self, exception: Exception) -> None:
         self.args = None
         self.kwargs = None
@@ -23,11 +27,13 @@ class GetMock:
         return self
 
     def json(self) -> dict:
+        """Предопределнные данные для теста"""
         return self.output
 
 
 @pytest.mark.parametrize("exception", (None, HTTPError, Exception))
 def test_send_code(test_config: Config, exception: Exception, mocker: MockerFixture):
+    """Тест отправки смс с кодом"""
     phone = 79001234567
     code = 1234
     mock = GetMock(exception)

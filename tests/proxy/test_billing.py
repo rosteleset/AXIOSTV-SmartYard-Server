@@ -1,3 +1,5 @@
+"""Модуль тестирования запросов к биллингу"""
+
 import json
 from typing import Any
 
@@ -10,6 +12,8 @@ BILLING_URL = "https://billing.ru/api/"
 
 
 class PostMock:
+    """Класс для мокирования post-запроса"""
+
     def __init__(self, output: dict) -> None:
         self.args = None
         self.kwargs = None
@@ -21,10 +25,12 @@ class PostMock:
         return self
 
     def json(self) -> dict:
+        """Предопределнные данные для теста"""
         return self.output
 
 
 def test_get_address_list(mocker: MockerFixture):
+    """Тест запроса у биллинга адресов по номеру телефона"""
     phone = 79001234567
     expected = {
         "response": "response",
@@ -44,6 +50,7 @@ def test_get_address_list(mocker: MockerFixture):
 
 
 def test_create_invoice(mocker: MockerFixture):
+    """Тест запроса к биллингу на формирование счета на оплату"""
     login, amount, phone = "user", "100", "79001234567"
     expected = {
         "response": "response",
@@ -63,6 +70,7 @@ def test_create_invoice(mocker: MockerFixture):
 
 
 def test_get_list(mocker: MockerFixture):
+    """Тест запроса списка списаний"""
     phone = 79001234567
     expected = {
         "response": "response",

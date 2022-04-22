@@ -1,10 +1,11 @@
+"""Модуль тестирования API, ветка /api/address"""
+
 import itertools
 
 import pytest
 from flask.testing import FlaskClient
 from pytest_mock import MockerFixture
 
-from smartyard.config import Config
 from smartyard.logic.user import User
 from smartyard.logic.users import Users
 from smartyard.proxy import Billing
@@ -23,6 +24,7 @@ access_fields = {"clientId", "expire", "flatId", "guestPhone"}
 def test_access_not_enough_params(
     flask_client: FlaskClient, fields: tuple, logic_user: User, mocker: MockerFixture
 ) -> None:
+    """Тест попытки аутентификации с нехваткой данных"""
     mocker.patch.object(Users, "user_by_uuid", return_value=logic_user)
     response = flask_client.post(
         "/api/address/access",
@@ -42,6 +44,7 @@ def test_access_not_enough_params(
 def test_access_full_params(
     flask_client: FlaskClient, logic_user: User, mocker: MockerFixture
 ) -> None:
+    """Тест попытки аутентификации с полными данными"""
     mocker.patch.object(Users, "user_by_uuid", return_value=logic_user)
     response = flask_client.post(
         "/api/address/access",
@@ -55,10 +58,10 @@ def test_access_full_params(
 
 def test_get_address_list(
     flask_client: FlaskClient,
-    test_config: Config,
     logic_user: User,
     mocker: MockerFixture,
 ) -> None:
+    """Тест запроса списка адресов пользователя"""
     mocker.patch.object(Users, "user_by_uuid", return_value=logic_user)
     mocker.patch.object(
         Billing, "get_address_list", return_value={"response": "response"}
@@ -75,6 +78,7 @@ def test_get_address_list(
 def test_get_settings_list(
     flask_client: FlaskClient, logic_user: User, mocker: MockerFixture
 ) -> None:
+    """Тест запроса списка настроек"""
     mocker.patch.object(Users, "user_by_uuid", return_value=logic_user)
     response = flask_client.post(
         "/api/address/getSettingsList",
@@ -88,6 +92,7 @@ def test_get_settings_list(
 def test_intercom_without_flat_id(
     flask_client: FlaskClient, logic_user: User, mocker: MockerFixture
 ) -> None:
+    """Тест запроса настроек домофона без указания квартиры"""
     mocker.patch.object(Users, "user_by_uuid", return_value=logic_user)
     response = flask_client.post(
         "/api/address/intercom",
@@ -107,6 +112,7 @@ def test_intercom_without_flat_id(
 def test_intercom_with_flat_id(
     flask_client: FlaskClient, logic_user: User, mocker: MockerFixture
 ) -> None:
+    """Тест запроса настроек домофона с указанием квартиры"""
     mocker.patch.object(Users, "user_by_uuid", return_value=logic_user)
     response = flask_client.post(
         "/api/address/intercom",
@@ -122,6 +128,7 @@ def test_intercom_with_flat_id(
 def test_offices(
     flask_client: FlaskClient, logic_user: User, mocker: MockerFixture
 ) -> None:
+    """Тест запроса списка офисов"""
     mocker.patch.object(Users, "user_by_uuid", return_value=logic_user)
     response = flask_client.post(
         "/api/address/offices",
@@ -137,6 +144,7 @@ def test_offices(
 def test_open_door_without_domophone_id(
     flask_client: FlaskClient, logic_user: User, mocker: MockerFixture
 ) -> None:
+    """Тест запроса открытия двери без указания идентификатора домофона"""
     mocker.patch.object(Users, "user_by_uuid", return_value=logic_user)
     response = flask_client.post(
         "/api/address/openDoor",
@@ -156,6 +164,7 @@ def test_open_door_without_domophone_id(
 def test_open_door_with_domophone_id(
     flask_client: FlaskClient, logic_user: User, mocker: MockerFixture
 ) -> None:
+    """Тест запроса открытия двери с указанием идентификатора домофона"""
     mocker.patch.object(Users, "user_by_uuid", return_value=logic_user)
     response = flask_client.post(
         "/api/address/openDoor",
@@ -170,6 +179,7 @@ def test_open_door_with_domophone_id(
 def test_plog_without_flat_id(
     flask_client: FlaskClient, logic_user: User, mocker: MockerFixture
 ) -> None:
+    """Тест запроса записей событий без указания идентификатора квартиры"""
     mocker.patch.object(Users, "user_by_uuid", return_value=logic_user)
     response = flask_client.post(
         "/api/address/plog",
@@ -189,6 +199,7 @@ def test_plog_without_flat_id(
 def test_plog_with_flat_id(
     flask_client: FlaskClient, logic_user: User, mocker: MockerFixture
 ) -> None:
+    """Тест запроса записей событий с указанием идентификатора квартиры"""
     mocker.patch.object(Users, "user_by_uuid", return_value=logic_user)
     response = flask_client.post(
         "/api/address/plog",
@@ -204,6 +215,7 @@ def test_plog_with_flat_id(
 def test_plog_days_without_flat_id(
     flask_client: FlaskClient, logic_user: User, mocker: MockerFixture
 ) -> None:
+    """Тест запроса дней записей событий без указания идентификатора квартиры"""
     mocker.patch.object(Users, "user_by_uuid", return_value=logic_user)
     response = flask_client.post(
         "/api/address/plogDays",
@@ -223,6 +235,7 @@ def test_plog_days_without_flat_id(
 def test_plog_days_with_flat_id(
     flask_client: FlaskClient, logic_user: User, mocker: MockerFixture
 ) -> None:
+    """Тест запроса дней записей событий с указанием идентификатора квартиры"""
     mocker.patch.object(Users, "user_by_uuid", return_value=logic_user)
     response = flask_client.post(
         "/api/address/plogDays",
@@ -238,6 +251,7 @@ def test_plog_days_with_flat_id(
 def test_register_qr_without_qr(
     flask_client: FlaskClient, logic_user: User, mocker: MockerFixture
 ) -> None:
+    """Тест запроса регистрации qr-кода без его передачи"""
     mocker.patch.object(Users, "user_by_uuid", return_value=logic_user)
     response = flask_client.post(
         "/api/address/registerQR",
@@ -257,6 +271,7 @@ def test_register_qr_without_qr(
 def test_register_qr_with_qr(
     flask_client: FlaskClient, logic_user: User, mocker: MockerFixture
 ) -> None:
+    """Тест запроса регистрации qr-кода"""
     mocker.patch.object(Users, "user_by_uuid", return_value=logic_user)
     response = flask_client.post(
         "/api/address/registerQR",
@@ -272,6 +287,7 @@ def test_register_qr_with_qr(
 def test_resend(
     flask_client: FlaskClient, logic_user: User, mocker: MockerFixture
 ) -> None:
+    """Тест запроса повторной отправки для гостя"""
     mocker.patch.object(Users, "user_by_uuid", return_value=logic_user)
     response = flask_client.post(
         "/api/address/resend",
@@ -285,6 +301,7 @@ def test_resend(
 def test_reset_code(
     flask_client: FlaskClient, logic_user: User, mocker: MockerFixture
 ) -> None:
+    """Тест запроса сброса кода открытия двери"""
     mocker.patch.object(Users, "user_by_uuid", return_value=logic_user)
     response = flask_client.post(
         "/api/address/resetCode",
@@ -298,6 +315,7 @@ def test_reset_code(
 def test_get_hcs_list(
     flask_client: FlaskClient, logic_user: User, mocker: MockerFixture
 ) -> None:
+    """Тест ????"""
     mocker.patch.object(Users, "user_by_uuid", return_value=logic_user)
     response = flask_client.post(
         "/api/address/getHcsList",

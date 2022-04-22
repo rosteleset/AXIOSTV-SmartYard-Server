@@ -1,8 +1,11 @@
+"""Тест бизнес-логики по работе с пользователями"""
+
 import uuid
 from datetime import datetime
 from typing import Union
 
 import pytest
+import sqlalchemy.orm
 from pytest_mock import MockerFixture
 
 from smartyard.db.storage import Storage
@@ -53,10 +56,15 @@ NOW = datetime.now()
     ),
 )
 def test_user_by_uuid(
-    _uuid: str, user: Users_db, expected: User, mocker: MockerFixture
+    _uuid: str,
+    user: Users_db,
+    expected: User,
+    mocker: MockerFixture,
+    database_session: sqlalchemy.orm.Session,
 ):
+    """Тест поиска пользователя по уникальному идентификатору"""
     mocker.patch.object(Storage, "user_by_uuid", return_value=user)
-    users = Users()
+    users = Users(database_session)
 
     found_user = users.user_by_uuid(_uuid)
 
@@ -101,10 +109,15 @@ def test_user_by_uuid(
     ),
 )
 def test_user_by_phone(
-    phone: str, user: Users_db, expected: User, mocker: MockerFixture
+    phone: str,
+    user: Users_db,
+    expected: User,
+    mocker: MockerFixture,
+    database_session: sqlalchemy.orm.Session,
 ):
+    """Тест поиска пользователя по уникальному номеру телефона"""
     mocker.patch.object(Storage, "user_by_phone", return_value=user)
-    users = Users()
+    users = Users(database_session)
 
     found_user = users.user_by_phone(phone)
 
@@ -193,10 +206,15 @@ def test_user_by_phone(
     ),
 )
 def test_save_user(
-    user: User, raw_user: Users_db, expected: User, mocker: MockerFixture
+    user: User,
+    raw_user: Users_db,
+    expected: User,
+    mocker: MockerFixture,
+    database_session: sqlalchemy.orm.Session,
 ):
+    """Тест сохранения пользователя"""
     mocker.patch.object(Storage, "save", return_value=raw_user)
-    users = Users()
+    users = Users(database_session)
 
     found_user = users.save_user(user)
 
@@ -233,10 +251,12 @@ def test_set_auth_code(
     mock: Temps,
     expected: Auth,
     mocker: MockerFixture,
+    database_session: sqlalchemy.orm.Session,
 ):
+    """Тест сохранения номера телефона и смс-кода для аутентификации"""
     mocker.patch.object(Storage, "save", return_value=mock)
     mocker.patch.object(Storage, "clear_codes_for_phone", return_value=None)
-    users = Users()
+    users = Users(database_session)
 
     auth = users.set_auth_code(phone)
 
@@ -284,9 +304,11 @@ def test_get_auth_by_phone_and_code(
     mock: Temps,
     expected: Auth,
     mocker: MockerFixture,
+    database_session: sqlalchemy.orm.Session,
 ):
+    """Тест поиска пользователя по телефону и смс-коду"""
     mocker.patch.object(Storage, "auth_by_phone_and_code", return_value=mock)
-    users = Users()
+    users = Users(database_session)
 
     auth = users.get_auth_by_phone_and_code(phone, code)
 

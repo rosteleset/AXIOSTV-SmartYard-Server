@@ -1,3 +1,5 @@
+"""Модуль тестирования API, ветка /api/geo"""
+
 from flask.testing import FlaskClient
 from pytest_mock import MockerFixture
 
@@ -8,6 +10,7 @@ from smartyard.logic.users import Users
 def test_address(
     flask_client: FlaskClient, logic_user: User, mocker: MockerFixture
 ) -> None:
+    """Тест запроса адреса дома"""
     mocker.patch.object(Users, "user_by_uuid", return_value=logic_user)
     response = flask_client.post(
         "/api/geo/address",
@@ -21,6 +24,7 @@ def test_address(
 def test_coder(
     flask_client: FlaskClient, logic_user: User, mocker: MockerFixture
 ) -> None:
+    """Тест запроса гео координат дома"""
     mocker.patch.object(Users, "user_by_uuid", return_value=logic_user)
     response = flask_client.post(
         "/api/geo/coder",
@@ -34,6 +38,7 @@ def test_coder(
 def test_get_all_locations(
     flask_client: FlaskClient, logic_user: User, mocker: MockerFixture
 ) -> None:
+    """Тест запроса населенных пунктов"""
     mocker.patch.object(Users, "user_by_uuid", return_value=logic_user)
     response = flask_client.post(
         "/api/geo/getAllLocations",
@@ -47,6 +52,7 @@ def test_get_all_locations(
 def test_get_all_services(
     flask_client: FlaskClient, logic_user: User, mocker: MockerFixture
 ) -> None:
+    """Тест запроса всех услуг"""
     mocker.patch.object(Users, "user_by_uuid", return_value=logic_user)
     response = flask_client.post(
         "/api/geo/getAllServices",
@@ -60,6 +66,7 @@ def test_get_all_services(
 def test_get_houses(
     flask_client: FlaskClient, logic_user: User, mocker: MockerFixture
 ) -> None:
+    """Тест запроса списка домов"""
     mocker.patch.object(Users, "user_by_uuid", return_value=logic_user)
     response = flask_client.post(
         "/api/geo/getHouses",
@@ -73,6 +80,7 @@ def test_get_houses(
 def test_get_services(
     flask_client: FlaskClient, logic_user: User, mocker: MockerFixture
 ) -> None:
+    """Тест запроса доступных услуг"""
     mocker.patch.object(Users, "user_by_uuid", return_value=logic_user)
     response = flask_client.post(
         "/api/geo/getServices",
@@ -86,6 +94,7 @@ def test_get_services(
 def test_get_streets(
     flask_client: FlaskClient, logic_user: User, mocker: MockerFixture
 ) -> None:
+    """Тест запроса списка улиц"""
     mocker.patch.object(Users, "user_by_uuid", return_value=logic_user)
     response = flask_client.post(
         "/api/geo/getStreets",

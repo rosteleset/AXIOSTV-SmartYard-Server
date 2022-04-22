@@ -4,7 +4,6 @@ from typing import Union
 
 from sqlalchemy.orm import Session
 
-from smartyard.db.database import create_db_connection
 from smartyard.db.temps import Temps
 from smartyard.db.users import Users
 
@@ -12,11 +11,8 @@ from smartyard.db.users import Users
 class Storage:
     """Класс работы с объектами в базе данных"""
 
-    def __init__(self, session: Session = None) -> None:
+    def __init__(self, session: Session) -> None:
         self._session = session
-        if not self._session:
-            datebase = create_db_connection()
-            self._session = datebase.session
 
     def save(self, raw_object: Union[Temps, Users]):
         """Сохранение объекта в базе

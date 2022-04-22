@@ -1,3 +1,5 @@
+"""Модуль тестирования API, ветка /api/user"""
+
 import itertools
 
 import pytest
@@ -25,6 +27,7 @@ add_my_phone_optional_fields = {"comment", "notification"}
 def test_add_my_phone_not_enough_params(
     flask_client: FlaskClient, fields: tuple, logic_user: User, mocker: MockerFixture
 ) -> None:
+    """Тест добавления телефона при нехватке данных"""
     mocker.patch.object(Users, "user_by_uuid", return_value=logic_user)
     response = flask_client.post(
         "/api/user/addMyPhone",
@@ -52,6 +55,7 @@ def test_add_my_phone_not_enough_params(
 def test_add_my_phone_full_required_params(
     flask_client: FlaskClient, fields: tuple, logic_user: User, mocker: MockerFixture
 ) -> None:
+    """Тест добавления телефона при полных данных"""
     mocker.patch.object(Users, "user_by_uuid", return_value=logic_user)
     response = flask_client.post(
         "/api/user/addMyPhone",
@@ -77,6 +81,7 @@ app_version_required_fields = {"version", "platform"}
 def test_app_version_not_enough_params(
     flask_client: FlaskClient, fields: tuple, logic_user: User, mocker: MockerFixture
 ) -> None:
+    """Тест проверки версии приложения при нехватке данных"""
     mocker.patch.object(Users, "user_by_uuid", return_value=logic_user)
     response = flask_client.post(
         "/api/user/appVersion",
@@ -96,6 +101,7 @@ def test_app_version_not_enough_params(
 def test_app_version_wrong_platform(
     flask_client: FlaskClient, logic_user: User, mocker: MockerFixture
 ) -> None:
+    """Тест проверки версии приложения при указании неверной платформы"""
     mocker.patch.object(Users, "user_by_uuid", return_value=logic_user)
     response = flask_client.post(
         "/api/user/appVersion",
@@ -119,6 +125,7 @@ def test_app_version_wrong_platform(
 def test_app_version_allowed_platform(
     flask_client: FlaskClient, platform: tuple, logic_user: User, mocker: MockerFixture
 ) -> None:
+    """Тест проверки версии приложения"""
     mocker.patch.object(Users, "user_by_uuid", return_value=logic_user)
     response = flask_client.post(
         "/api/user/appVersion",
@@ -145,6 +152,7 @@ confirm_code_required_fields = {"userPhone", "smsCode"}
 def test_confirm_code_not_enough_params(
     flask_client: FlaskClient, fields: tuple, logic_user: User, mocker: MockerFixture
 ) -> None:
+    """Тест подтверждения смс-кода при нехватке параметров"""
     mocker.patch.object(Users, "user_by_uuid", return_value=logic_user)
     response = flask_client.post(
         "/api/user/confirmCode",
@@ -183,6 +191,7 @@ def test_confirm_code_not_enough_params(
 def test_confirm_code_wrong_required_params(
     flask_client: FlaskClient, fields: tuple, logic_user: User, mocker: MockerFixture
 ) -> None:
+    """Тест подтверждения смс-кода при неверных параметрах"""
     mocker.patch.object(Users, "user_by_uuid", return_value=logic_user)
     response = flask_client.post(
         "/api/user/confirmCode",
@@ -231,7 +240,7 @@ def test_confirm_code_wrong_required_params(
         ),
     ),
 )
-def test_confirm_code_wrong_required_params(
+def test_confirm_code_with_exception(
     flask_client: FlaskClient,
     exception: Exception,
     exception_args: dict,
@@ -239,7 +248,9 @@ def test_confirm_code_wrong_required_params(
     logic_user: User,
     mocker: MockerFixture,
 ) -> None:
-    def __create_user(*args, **kwargs):
+    """Тест подтверждения смс-кода при возникновении исключения"""
+
+    def __create_user(*_, **__):
         raise exception(**exception_args)
 
     mocker.patch.object(Users, "user_by_uuid", return_value=logic_user)
@@ -265,6 +276,7 @@ def test_confirm_code_wrong_required_params(
 def test_confirm_code(
     flask_client: FlaskClient, logic_user: User, mocker: MockerFixture
 ) -> None:
+    """Тест подтверждения смс-кода"""
     token = "token"
     json_data = {
         "userPhone": "12345678901",
@@ -274,7 +286,7 @@ def test_confirm_code(
         "email": "email",
     }
 
-    def __create_user(*args, **kwargs):
+    def __create_user(*_, **__):
         return token
 
     mocker.patch.object(Users, "user_by_uuid", return_value=logic_user)
@@ -306,6 +318,7 @@ def test_confirm_code(
 def test_get_payments_list(
     flask_client: FlaskClient, logic_user: User, mocker: MockerFixture
 ) -> None:
+    """Тест запроса списка платежей"""
     mocker.patch.object(Users, "user_by_uuid", return_value=logic_user)
     mocker.patch.object(Billing, "get_list", return_value={"response": "response"})
 
@@ -322,6 +335,7 @@ def test_get_payments_list(
 def test_notification(
     flask_client: FlaskClient, logic_user: User, mocker: MockerFixture
 ) -> None:
+    """Тест запроса списка уведомлений"""
     mocker.patch.object(Users, "user_by_uuid", return_value=logic_user)
     response = flask_client.post(
         "/api/user/notification",
@@ -335,6 +349,7 @@ def test_notification(
 def test_ping(
     flask_client: FlaskClient, logic_user: User, mocker: MockerFixture
 ) -> None:
+    """Тест пинга"""
     mocker.patch.object(Users, "user_by_uuid", return_value=logic_user)
     response = flask_client.post(
         "/api/user/ping",
@@ -347,6 +362,7 @@ def test_ping(
 def test_push_tokens(
     flask_client: FlaskClient, logic_user: User, mocker: MockerFixture
 ) -> None:
+    """Тест запроса токенов для проверки"""
     mocker.patch.object(Users, "user_by_uuid", return_value=logic_user)
     response = flask_client.post(
         "/api/user/pushTokens",
@@ -430,6 +446,7 @@ def test_register_push_token(
     logic_user: User,
     mocker: MockerFixture,
 ) -> None:
+    """Тест регистрации токена для пуш-уведомлений"""
     mocker.patch.object(Users, "user_by_uuid", return_value=logic_user)
     response = flask_client.post(
         "/api/user/registerPushToken",
@@ -520,6 +537,7 @@ def test_request_code(
     logic_user: User,
     mocker: MockerFixture,
 ) -> None:
+    """Тест запроса кода подтверждения"""
     mocker.patch.object(Users, "user_by_uuid", return_value=logic_user)
     mocker.patch.object(Users, "set_auth_code", return_value=logic_auth)
     mocker.patch.object(Kannel, "send_code", return_value=None)
@@ -604,6 +622,7 @@ def test_restore(
     logic_user: User,
     mocker: MockerFixture,
 ) -> None:
+    """Тест восстановления доступа в личный ккабинет"""
     mocker.patch.object(Users, "user_by_uuid", return_value=logic_user)
     response = flask_client.post(
         "/api/user/restore",
@@ -657,6 +676,7 @@ def test_send_name(
     logic_user: User,
     mocker: MockerFixture,
 ) -> None:
+    """Тест сохранения имени/обращения"""
     mocker.patch.object(Users, "user_by_uuid", return_value=logic_user)
     response = flask_client.post(
         "/api/user/sendName",
@@ -673,6 +693,7 @@ def test_send_name(
 def test_get_billing_list(
     flask_client: FlaskClient, logic_user: User, mocker: MockerFixture
 ) -> None:
+    """Тест запроса списка договоров для оплаты"""
     mocker.patch.object(Users, "user_by_uuid", return_value=logic_user)
     mocker.patch.object(Billing, "get_list", return_value={"response": "response"})
 

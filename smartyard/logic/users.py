@@ -3,7 +3,7 @@ import dataclasses
 import secrets
 import uuid as std_uuid
 from random import randint
-from typing import Iterable, Union
+from typing import Iterable, Optional, Union
 
 from smartyard import db
 from smartyard.exceptions import NotFoundCodeAndPhone, NotFoundCodesForPhone
@@ -14,36 +14,36 @@ from smartyard.logic.user import User
 class Users:
     """Бизнес-логика работы с пользователями системы: сохранение, поиск и сохранение"""
 
-    def __init__(self) -> None:
-        pass
+    def __init__(self, session) -> None:
+        self._session = session
 
-    def user_by_uuid(self, _uuid: Union[str, std_uuid.UUID]) -> User:
+    def user_by_uuid(self, _uuid: Union[str, std_uuid.UUID]) -> Optional[User]:
         """Поиск пользователя по uuid пользователя
 
         Параметры:
         - uuid - идентификатор пользователя
         """
         _uuid = std_uuid.UUID(_uuid) if not isinstance(_uuid, std_uuid.UUID) else _uuid
-        user = db.Storage().user_by_uuid(_uuid)
+        user = db.Storage(self._session).user_by_uuid(_uuid)
         return User(**user.as_dict()) if user else None
 
-    def user_by_phone(self, phone: Union[int, str]) -> User:
+    def user_by_phone(self, phone: Union[int, str]) -> Optional[User]:
         """Поиск пользователя по номеру телефона
 
         Параметры:
         - phone - номер телефона
         """
         phone = int(phone) if not isinstance(phone, int) else phone
-        user = db.Storage().user_by_phone(phone)
+        user = db.Storage(self._session).user_by_phone(phone)
         return User(**user.as_dict()) if user else None
 
-    def user_by_video_token(self, token: str) -> User:
+    def user_by_video_token(self, token: str) -> Optional[User]:
         """Поиск пользователя по номеру телефона
 
         Параметры:
         - token - уникальный идентификатор для доступа к видеопотокам
         """
-        user = db.Storage().user_by_video_token(token)
+        user = db.Storage(self._session).user_by_video_token(token)
         return User(**user.as_dict()) if user else None
 
     def save_user(self, user: User) -> User:
@@ -53,7 +53,7 @@ class Users:
         - user - пользователь
         """
         _user = db.Users(**dataclasses.asdict(user))
-        return User(**db.Storage().save(_user).as_dict())
+        return User(**db.Storage(self._session).save(_user).as_dict())
 
     def set_auth_code(self, phone: Union[int, str]) -> Auth:
         """Сохранение в базе кода аутентификации
@@ -61,38 +61,40 @@ class Users:
         Параметры:
         - phone - номер телефона
         """
-        storage = db.Storage()
-        storage.clear_codes_for_phone(phone)
+        storage = db.Storage(self._session)
+        storage.clear_codes_for_phone(int(phone))
         auth = db.Temps(userphone=int(phone), smscode=randint(1000, 9999))
         return Auth(**storage.save(auth).as_dict())
 
     def get_auth_by_phone_and_code(
         self, phone: Union[int, str], code: Union[int, str]
-    ) -> Auth:
+    ) -> Optional[Auth]:
         """Проверка(поиск) кода авторизации с учетом номера телефона
 
         Параметры:
         - phone - номер телефона
         - code - код для SMS
         """
-        auth = db.Storage().auth_by_phone_and_code(phone=phone, code=code)
+        auth = db.Storage(self._session).auth_by_phone_and_code(
+            phone=int(phone), code=int(code)
+        )
         return Auth(**auth.as_dict()) if auth else None
 
-    def update_video_token(self, user_phone: int, strims: Iterable) -> str:
+    def update_video_token(self, user_phone: int, strims: Iterable) -> Optional[str]:
         """Обновление данных о доступных видео-потоках
 
         Параметры:
         - user_phone - номер телефона в целочисленном виде
         - strims - названия доступных потоков
         """
-        user = self.user_by_phone(user_phone)
+        user = self.user_by_phone(int(user_phone))
         user = user.set_values(videotoken=secrets.token_hex(16), strims=strims)
         user = self.save_user(user)
         return user.videotoken
 
     def create_user(
         self, user_phone: int, sms_code: int, name: str, patronymic: str, email: str
-    ):
+    ) -> str:
         """Создать или обновить пользователя
 
         Параметры:
@@ -102,7 +104,7 @@ class Users:
         - patronymic - отчество пользователя
         - email - электронный адрес пользователя
         """
-        storage = db.Storage()
+        storage = db.Storage(self._session)
         phone_codes = storage.auth_by_phone(phone=user_phone)
         with_sms_code = [code for code in phone_codes if code.sms_code == sms_code]
 

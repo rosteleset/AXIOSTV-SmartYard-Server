@@ -25,12 +25,15 @@ def accessfl() -> Response:
     extime = datetime.now() - timedelta(
         minutes=int(current_app.config["CONFIG"].EXPIRE)
     )
-    users = [
-        user
-        for user in Users().user_by_video_token(token)
-        if user and user.vttime >= extime and name in user.strims
-    ]
+    session = current_app.extensions["sqlalchemy"].db.create_scoped_session()
+    user = Users(session).user_by_video_token(token)
 
-    if not users:
+    if (
+        not user
+        or not user.vttime
+        or extime > user.vttime
+        or not user.strims
+        or name not in user.strims
+    ):
         abort(403, {"code": 403, "name": "Forbidden", "message": "Неверный токен"})
     return Response(status=200)

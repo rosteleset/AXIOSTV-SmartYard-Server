@@ -489,8 +489,8 @@ def plog_days() -> Response:
 @json_verification(("QR",))
 def register_qr() -> Response:
     """Зарегистрировать QR код"""
-    request_data = request.get_json()
-    qr_code = request_data.get("QR")
+    request_data = request.get_json() or {}
+    qr_code = request_data.get("QR", "")
 
     qr_current = qr_code + "1"
     # TODO: Проверить: с условием что-то не то

@@ -1,3 +1,6 @@
+"""Модуль тестирования API, ветка /api/ext"""
+
+
 from flask.testing import FlaskClient
 from pytest_mock import MockerFixture
 
@@ -8,6 +11,7 @@ from smartyard.logic.users import Users
 def test_ext(
     flask_client: FlaskClient, logic_user: User, mocker: MockerFixture
 ) -> None:
+    """Тест запроса расширения"""
     mocker.patch.object(Users, "user_by_uuid", return_value=logic_user)
     response = flask_client.post(
         "/api/ext/ext",
@@ -21,6 +25,7 @@ def test_ext(
 def test_list(
     flask_client: FlaskClient, logic_user: User, mocker: MockerFixture
 ) -> None:
+    """Тест запроса списка расширений"""
     mocker.patch.object(Users, "user_by_uuid", return_value=logic_user)
     response = flask_client.post(
         "/api/ext/list",

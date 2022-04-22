@@ -1,3 +1,5 @@
+"""Модуль тестирования API, проверка авторизации"""
+
 import pytest
 from flask.testing import FlaskClient
 from pytest_mock import MockerFixture
@@ -65,6 +67,7 @@ endpoints = {
 def test_with_auth_without_authorization(
     flask_client: FlaskClient, method: str, url: str
 ) -> None:
+    """Тест эндпойнтов требующих авторизации без передачи токена"""
     response = flask_client.open(url, method=method.upper())
     assert response.status_code == 422
     assert response.content_type == "application/json"
@@ -79,6 +82,7 @@ def test_with_auth_without_authorization(
 def test_with_auth_with_wrong_token(
     flask_client: FlaskClient, method: str, url: str, mocker: MockerFixture
 ) -> None:
+    """Тест эндпойнтов требующих авторизации с неверным токеном"""
     mocker.patch.object(Users, "user_by_uuid", return_value=None)
     response = flask_client.open(
         url, method=method.upper(), headers={"Authorization": "auth"}

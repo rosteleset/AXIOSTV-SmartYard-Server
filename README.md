@@ -1,4 +1,5 @@
-Серверная часть, которая позволяет использовать SmartYard приложения для умных домофонов и видеонаблюдения
+# Описание
+Серверная часть приложения SmartYard для умных домофонов и видеонаблюдения
 
 Описаны все используемые в API вызовы, но не все полностью реализованы, часть ответов захардкодены. 
 
@@ -19,93 +20,148 @@
 Компания, в которой я работаю, CentOS очень давно является корпоративным стандартом. Имеется свой репозиторий, который решает вопрос
 с необходимыми версиями ПО.
 
-Приступим. Необходимо выполнить следующие команды в терминале под рутом:
+# Запуск
 
-yum install -y python36-virtualenv postgresql-server nginx supervisor
+Приступим.
 
-#Переносим файл smartyard.ini в /etc/supervisord.d 
+## Необходимо выполнить следующие команды в терминале под рутом:
 
-#Добавляем автозапуск postgresql-server nginx supervisor
+```bash
+yum install -y python36-virtualenv python36-devel libcurl-devel postgresql-server nginx supervisor
+```
 
-#Стартуем postgresql-server nginx
+## Переносим файл smartyard.ini в /etc/supervisord.d 
 
-#Далее в терминале выполняем команды (из под root`а):
+## Добавляем автозапуск postgresql-server nginx supervisor
 
-cd /opt
+## Стартуем postgresql-server nginx
 
-mkdir smartyard
+## Подготовка проекта для первого запуска(из под root`а):
+```bash
+mkdir -p /opt/smartyard
 
-virtualenv-3.6 smartyard
+cd /opt/smartyard # В этот каталог надо скопировать проект
 
-smartyard/bin/pip install requests
+python3.6 -m venv venv
 
-smartyard/bin/pip install flask
-
-smartyard/bin/pip install psycopg2-binary
-
-smartyard/bin/pip install pycurl
-
-smartyard/bin/pip install firebase-admin
-
-smartyard/bin/pip install Flask-Migrate
-
-smartyard/bin/pip install python-dotenv
-
-cd smartyard
+venv/bin/pip install -r requirements.txt
 
 mv example.env .env
 
 su - postgres
 
-psql
-
-CREATE DATABASE smartyard WITH OWNER "smartyard" ENCODING 'UTF8';
-
-CREATE USER smartyard WITH PASSWORD 'smartyardpass';
-
-GRANT ALL PRIVILEGES ON DATABASE smartyard TO smartyard;
-
-\q
+psql -f db/init.sql
 
 exit
 
-export FLASK_APP=app.py
+FLASK_APP=app.py bin/flask db upgrade
 
-bin/flask db init
+venv/bin/python app.py
+```
 
-bin/flask db migrate
+## Подготовка(обновление) схемы в базе данных(из под root`а):
+```bash
+su - postgres
 
-bin/flask db upgrade
+psql -f db/init.sql
 
-./app.py
+exit
+
+FLASK_APP=app.py venv/bin/flask db upgrade
+
+venv/bin/python app.py
+```
+
+## Ручной запуск сервиса(из под root`а):
+```bash
+cd /opt/smartyard
+
+venv/bin/python app.py
+```
 
 
 Основные настройки, в т.ч. подключение к базе данных (PG_...) и серверу kannel (KANNEL_), а также имя отправителя смс (поддерживается не всеми смс-агрегаторами) и текстовая строка перед 4-х значным кодом подтверждения (текст смс) находятся в файле .env и интуитвно понятны. Кроме того, необходимо настроить nginx, добавив в конфиг следующие строчки:
- 
- location /api {
- 
-    proxy_pass      http://127.0.0.1:5000;
-    
-    proxy_set_header HOST $host;
-    
-    proxy_set_header X-Forwarded-Proto $scheme;
-    
-    proxy_set_header X-Real-IP $remote_addr;
-    
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    
-    proxy_set_header X-Forwarded-Proto $scheme;
-    
-    proxy_set_header X-Request-Id $request_id;
-    
-  }
 
-#Стартуем supervisord:
+```nginx
+location /api {
+  proxy_pass      http://127.0.0.1:5000;
+  proxy_set_header HOST $host;
+  proxy_set_header X-Forwarded-Proto $scheme;
+  proxy_set_header X-Real-IP $remote_addr;
+  proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+  proxy_set_header X-Forwarded-Proto $scheme;
+  proxy_set_header X-Request-Id $request_id;
+}
+```
+## Стартуем supervisord:
+
+```bash
 systemctl start supervisord
-
+```
 
 Лицензия и условия использования
 
 Авторские права на используемое API принаддежат ЛанТа, код АКСИОСТВ
 
 Данный проект опубликован под стандартной общественной лицензией GNU GPLv3. Вы можете модифицировать и использовать наши наработки в своих проектах, в т.ч. коммерческих, при обязательном условии публикации их исходного кода. Также мы готовы рассмотреть ваши Pull requests, если вы хотите чтобы наш проект развивался с учётом ваших модификаций и доработок.
+
+
+# Разработка и тестирование
+## Подготовка
+Для разработки и тестирования необходимо установить основные и дополнительные пакеты:
+```bash
+smartyard/bin/pip install -r requirements.txt
+smartyard/bin/pip install -r requirements.dev.txt
+```
+
+## Тестирование
+Для тестирования работы с базой данных необходимо предварительно запустить PostgreSQL и создать пустую базу: ```psql -h 127.0.0.1 -U postgres -f db/init.sql```
+
+Для теста настройки БД указаны в фикстуре tests/fixtures/database.py::database_engine
+
+Запуск модульных тестов:
+```bash
+smartyard/bin/python -m pytest tests
+```
+
+## Автоматическое форматирование
+```bash
+smartyard/bin/black app.py
+smartyard/bin/black smartyard
+smartyard/bin/black tests
+```
+
+## Автоматическое форматирование импортов
+```bash
+smartyard/bin/isort app.py
+smartyard/bin/isort smartyard
+smartyard/bin/isort tests
+```
+
+## Проверка форматирования
+```bash
+smartyard/bin/black --check app.py
+smartyard/bin/black --check smartyard
+smartyard/bin/black --check tests
+```
+
+## Проверка форматирования импортов
+```bash
+smartyard/bin/isort --check app.py
+smartyard/bin/isort --check smartyard
+smartyard/bin/isort --check tests
+```
+
+## Проверка кода с flake8
+```
+smartyard/bin/flake8 app.py
+smartyard/bin/flake8 smartyard
+smartyard/bin/flake8 tests
+```
+
+## Проверка кода с pylint
+```
+smartyard/bin/pylint app.py
+smartyard/bin/pylint smartyard
+smartyard/bin/pylint tests
+```

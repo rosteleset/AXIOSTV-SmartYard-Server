@@ -52,29 +52,20 @@ su - postgres
 
 psql -f db/init.sql
 
-export FLASK_APP=app.py
+exit
 
-bin/flask db init
-
-bin/flask db migrate
-
-bin/flask db upgrade
+FLASK_APP=app.py bin/flask db upgrade
 
 venv/bin/python app.py
 ```
 
 ## Подготовка(обновление) схемы в базе данных(из под root`а):
 ```bash
-
 su - postgres
 
 psql -f db/init.sql
 
-export FLASK_APP=app.py
-
-bin/flask db init
-
-bin/flask db migrate
+exit
 
 FLASK_APP=app.py venv/bin/flask db upgrade
 
@@ -91,7 +82,7 @@ venv/bin/python app.py
 
 Основные настройки, в т.ч. подключение к базе данных (PG_...) и серверу kannel (KANNEL_), а также имя отправителя смс (поддерживается не всеми смс-агрегаторами) и текстовая строка перед 4-х значным кодом подтверждения (текст смс) находятся в файле .env и интуитвно понятны. Кроме того, необходимо настроить nginx, добавив в конфиг следующие строчки:
 
-``` nginx
+```nginx
 location /api {
   proxy_pass      http://127.0.0.1:5000;
   proxy_set_header HOST $host;
@@ -117,12 +108,18 @@ systemctl start supervisord
 
 # Разработка и тестирование
 ## Подготовка
-Для разработки и тестирования необходимо установить дополнительные пакеты:
+Для разработки и тестирования необходимо установить основные и дополнительные пакеты:
 ```bash
+smartyard/bin/pip install -r requirements.txt
 smartyard/bin/pip install -r requirements.dev.txt
 ```
 
 ## Тестирование
+Для тестирования работы с базой данных необходимо предварительно запустить PostgreSQL и создать пустую базу: ```psql -h 127.0.0.1 -U postgres -f db/init.sql```
+
+Для теста настройки БД указаны в фикстуре tests/fixtures/database.py::database_engine
+
+Запуск модульных тестов:
 ```bash
 smartyard/bin/python -m pytest tests
 ```
@@ -159,10 +156,12 @@ smartyard/bin/isort --check tests
 ```
 smartyard/bin/flake8 app.py
 smartyard/bin/flake8 smartyard
+smartyard/bin/flake8 tests
 ```
 
 ## Проверка кода с pylint
 ```
 smartyard/bin/pylint app.py
 smartyard/bin/pylint smartyard
+smartyard/bin/pylint tests
 ```

@@ -18,7 +18,7 @@ class BaseModel:
         }
 
 
-@functools.lru_cache
+@functools.lru_cache(None)
 def create_db_connection():
     """Создание объекта подключения к базе данных"""
     return SQLAlchemy()

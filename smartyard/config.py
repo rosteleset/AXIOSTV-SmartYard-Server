@@ -36,7 +36,7 @@ class Config:
         return "\n".join({f'"{var}" = "{val}"' for var, val in self.__dict__.items()})
 
 
-@lru_cache
+@lru_cache(None)
 def get_config(filename=".env") -> Config:
     """Создать класс-конфигурации для указанного файла
     Для каждого файла создается только один объект класса.

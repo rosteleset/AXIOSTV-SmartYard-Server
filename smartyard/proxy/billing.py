@@ -49,6 +49,7 @@ class Billing:
     def _generate_url(self, uri: str) -> str:
         return urllib.parse.urljoin(self._url, uri)
 
+    # pylint: disable=no-self-use
     def _make_json_request(self, url: str, data: dict) -> dict:
         return requests.post(
             url,

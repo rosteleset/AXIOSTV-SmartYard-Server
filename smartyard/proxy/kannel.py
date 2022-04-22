@@ -5,6 +5,7 @@ from requests.exceptions import HTTPError
 from smartyard.config import Config
 
 
+# pylint: disable=too-few-public-methods
 class Kannel:
     """Класс интеграции с Kannel для рассыоки SMS
 
@@ -41,6 +42,7 @@ class Kannel:
             response.raise_for_status()
         except HTTPError as http_err:
             print(f"HTTP error occurred: {http_err}")
+        # pylint: disable=broad-except
         except Exception as err:
             print(f"Other error occurred: {err}")
         else:

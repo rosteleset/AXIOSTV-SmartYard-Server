@@ -5,6 +5,7 @@ from datetime import datetime
 from typing import List, Optional
 
 
+# pylint: disable=too-many-instance-attributes
 @dataclass(frozen=True)
 class User:
     """Класс для работы с пользователем

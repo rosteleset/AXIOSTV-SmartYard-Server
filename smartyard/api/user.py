@@ -215,7 +215,7 @@ def restore():
         return Response(status=204, mimetype="application/json")
         # TODO: Написать условия для ошибки Forbidden, 403
         # abort(403, {"code": 403, "name": "Forbidden", "message": "Запрещено"})
-    # TODO: Нужен вариант по умлочанию: пока такой
+    # TODO: Нужен вариант по умлочанию, пока такой
     return Response(status=204, mimetype="application/json")
 
 

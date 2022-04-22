@@ -7,6 +7,7 @@ from sqlalchemy.ext.declarative import declarative_base
 Base = declarative_base()
 
 
+# pylint: disable=no-member,too-few-public-methods
 class BaseModel:
     """Класс дополнительных функций для работы с моделями в базе данных"""
 

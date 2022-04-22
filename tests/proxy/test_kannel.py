@@ -26,9 +26,10 @@ class GetMock:
             raise self.exception("")
         return self
 
+    # pylint: disable=no-self-use
     def json(self) -> dict:
         """Предопределнные данные для теста"""
-        return self.output
+        return {}
 
 
 @pytest.mark.parametrize("exception", (None, HTTPError, Exception))

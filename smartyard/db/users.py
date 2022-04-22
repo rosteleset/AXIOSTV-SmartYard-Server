@@ -9,6 +9,7 @@ from sqlalchemy.dialects.postgresql import UUID
 from smartyard.db.database import Base, BaseModel
 
 
+# pylint: disable=too-many-instance-attributes
 class Users(Base, BaseModel):
     """Таблица с кодами для аутентификации
 

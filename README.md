@@ -1,5 +1,5 @@
 # Описание
-Серверная часть, которая позволяет использовать SmartYard приложения для умных домофонов и видеонаблюдения
+Серверная часть приложения SmartYard для умных домофонов и видеонаблюдения
 
 Описаны все используемые в API вызовы, но не все полностью реализованы, часть ответов захардкодены. 
 
@@ -40,7 +40,7 @@ yum install -y python36-virtualenv python36-devel libcurl-devel postgresql-serve
 ```bash
 mkdir -p /opt/smartyard
 
-cd /opt/smartyard
+cd /opt/smartyard # В этот каталог надо скопировать проект
 
 python3.6 -m venv venv
 

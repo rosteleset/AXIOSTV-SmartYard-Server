@@ -45,6 +45,9 @@ virtualenv-3.6 smartyard
 
 python3 -m venv smartyard
 
+
+#Дале в терминале:
+
 smartyard/bin/pip install requests
 
 smartyard/bin/pip install flask

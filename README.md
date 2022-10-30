@@ -15,15 +15,19 @@
 
 После подтверждения номера телефона пользователю Мобильного Приложения сразу становяться доступен функционал личного  кабинета, причем всех договоров, в которых указан этот номер. В нашем случае серверная часть обращается в апи биллинга, отправляя туда номер телефона клиента и получая в ответ json массив с необходимой информацией. 
 
-Инсталяцию предлагаем делать на CentOS 7. Предполагается, что репозиторий epel подключен, kannel для отправки смс-сообщений на шлюз по протоколу smpp установлен и настроен. Информации по этой теие в сети достаточно. 
-Адептам Debian/Ubuntu и других популярных дистрибутивов. Не сомневаюсь, что ваш опыт и знания позволит самостоятельно адаптировать эту инструкцию под ваши нужды. 
-
-Компания, в которой я работаю, CentOS очень давно является корпоративным стандартом. Имеется свой репозиторий, который решает вопрос
-с необходимыми версиями ПО.
+Инсталяцию можно делать на CentOS 7 (используется у нас), так и на Dabian/Ubuntu. Предполагается, что репозиторий epel подключен (на CentOS), kannel для отправки смс-сообщений на шлюз по протоколу smpp установлен и настроен. Информации по этой теие в сети достаточно. 
 
 Приступим. Необходимо выполнить следующие команды в терминале под рутом:
+cd /opt
 
+mkdir smartyard
+
+
+#CentOS:
 yum install -y python36-virtualenv postgresql-server nginx supervisor
+
+#Dabian/Ubuntu:
+apt-get install python3-venv postgresql nginx supervisor
 
 #Переносим файл smartyard.ini в /etc/supervisord.d 
 
@@ -31,13 +35,11 @@ yum install -y python36-virtualenv postgresql-server nginx supervisor
 
 #Стартуем postgresql-server nginx
 
-#Далее в терминале выполняем команды (из под root`а):
-
-cd /opt
-
-mkdir smartyard
-
+#CentOS:
 virtualenv-3.6 smartyard
+
+#Dabian/Ubuntu:
+python3 -m venv smartyard
 
 smartyard/bin/pip install requests
 
@@ -61,9 +63,9 @@ su - postgres
 
 psql
 
-CREATE DATABASE smartyard WITH OWNER "smartyard" ENCODING 'UTF8';
-
 CREATE USER smartyard WITH PASSWORD 'smartyardpass';
+
+CREATE DATABASE smartyard WITH OWNER "smartyard" ENCODING 'UTF8';
 
 GRANT ALL PRIVILEGES ON DATABASE smartyard TO smartyard;
 

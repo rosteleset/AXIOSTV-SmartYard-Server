@@ -24,9 +24,11 @@ mkdir smartyard
 
 
 #CentOS:
+
 yum install -y python36-virtualenv postgresql-server nginx supervisor
 
 #Dabian/Ubuntu:
+
 apt-get install python3-venv postgresql nginx supervisor
 
 #Переносим файл smartyard.ini в /etc/supervisord.d 
@@ -36,9 +38,11 @@ apt-get install python3-venv postgresql nginx supervisor
 #Стартуем postgresql-server nginx
 
 #CentOS:
+
 virtualenv-3.6 smartyard
 
 #Dabian/Ubuntu:
+
 python3 -m venv smartyard
 
 smartyard/bin/pip install requests

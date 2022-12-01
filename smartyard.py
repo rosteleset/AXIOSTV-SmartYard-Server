@@ -1,5 +1,10 @@
 #!bin/python
-import random, uuid, os, json, requests, binascii, secrets, datetime, pytz, time, calendar
+import random, uuid, os, json, requests, binascii, secrets, datetime, pytz, time, calendar, base64, hashlib, codecs, binascii
+from binascii import a2b_base64
+from Cryptodome.Hash import SHA512
+from Cryptodome.PublicKey import RSA
+from Cryptodome.Signature import PKCS1_v1_5 as PKCS
+from Cryptodome.Util.asn1 import DerSequence
 from datetime import timedelta
 from random import randint
 from flask import Flask, jsonify, request, make_response, abort
@@ -11,12 +16,13 @@ from sqlalchemy.sql import exists, func
 from dotenv import load_dotenv
 from requests.exceptions import HTTPError
 from geopandas.tools import geocode
+from werkzeug.datastructures import ImmutableMultiDict
 import logging, sys
 import pycurl
 import subprocess
 from smartyard_db import create_db_connection
 from smartyard_db import Temps, Settings, Users, Records, Invoices, Devices, Rights
-from smartyard_bill import addressList, billingList
+from smartyard_bill import addressList, billingList, agrmId, paySuccess
 
 try:
     from io import BytesIO
@@ -130,13 +136,39 @@ def accessfl():
 @app.route('/api/paysuccess', methods=['GET'])
 def paysuccess():
     global response
-    argsget = request.args.get()
-    res =1
-    if not res == 0:
-        response = {'code':403,'name':'Forbidden','message':'Нет токена'}
-        abort (403)
-    response = app.response_class(status=200)
-    return response
+    orderNumber = request.args.get('orderNumber')
+    operation = request.args.get('operation')
+    status = request.args.get('status')
+    checksum = request.args.get('checksum')
+    argsget = request.args.to_dict(flat=True)
+    signature = codecs.decode(checksum.lower(), 'hex')
+    del argsget['checksum']
+    del argsget['sign_alias']
+    args = sorted(argsget.items(), key=lambda x: x[0])
+    largs = ''.join(str(x) for x in args).replace(')(', ';').replace(', ', ';').replace('(', '').replace(')', '').replace('\'', '') + ';'
+    message = f'{largs}'.encode()
+    with open('pub.pem',"r",encoding='utf-8') as f:
+        pem = f.read()
+        lines = pem.replace(" ", '').split()
+        der = a2b_base64(''.join(lines[1:-1]))
+        cert = DerSequence()
+        cert.decode(der)
+        tbsCertificate = DerSequence()
+        tbsCertificate.decode(cert[0])
+        subjectPublicKeyInfo = tbsCertificate[6]
+        publicKey = RSA.importKey(subjectPublicKeyInfo)
+        h = SHA512.new()
+        h.update(message)
+        verifier = PKCS.new(publicKey.publickey())
+        if (operation == 'deposited' or operation == 'declinedByTimeout') and status == '1' and verifier.verify(h, signature):
+            row = [r._asdict() for r in db.session.query(Invoices.amount, Invoices.agrmid).filter_by(invoice_id=orderNumber).all()]
+            db.session.query(Invoices).filter_by(invoice_id=orderNumber).update({'invoice_pay' : True})
+            db.session.commit()
+            paySuccess(row[0]['amount']. row[0]['agrmid'])
+            response = app.response_class(status=200)
+            return response
+    response = {'code':403,'name':'Forbidden','message':'Операция запрещена'}
+    abort (403)
 
 @app.route('/api/cams/caminit', methods=['POST'])
 def cams_caminit():
@@ -469,10 +501,6 @@ def cctv_recPrepare():
     if row:
         camurl = row[0]['url'] + '/' + str(row[0]['device_uuid'])
         camname = row[0]['title']
-    else:
-        camresponse = requests.post(billing_url + "getcctvcam", headers={'Content-Type':'application/json'}, data=json.dumps({'camid': cam_id})).json()
-        camurl = camresponse['url']
-        camname = camresponse['name']
     time_from = datetime.datetime.strptime(request_data['from'], '%Y-%m-%d %H:%M:%S')
     time_to = datetime.datetime.strptime(request_data['to'], '%Y-%m-%d %H:%M:%S')
     time_rec = time_to - time_from
@@ -702,11 +730,13 @@ def pay_prepare():
     global response
     phone = access_verification(request.headers)
     request_data = json_verification(request)
-    new_invoice = Invoices(invoice_id = None, invoice_time = None, invoice_pay = None, contract = request_data['clientId'], amount = request_data['amount'])
+    agrmid = agrmId(request_data['clientId'])    
+    new_invoice = Invoices(invoice_id = None, invoice_time = None, invoice_pay = None, contract = request_data['clientId'], amount = request_data['amount'], agrmid = agrmid)
     db.session.add(new_invoice)
     db.session.commit()
     response = []
-    response = {'code':200,'name':'OK','message':'Хорошо','data':new_invoice.invoice_id}
+    response = {'code':200,'name':'OK','message':'Хорошо','data':str(new_invoice.invoice_id)}
+    print(f"{response}")
     return jsonify(response)
 
 @app.route('/api/pay/process', methods=['POST'])

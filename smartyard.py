@@ -164,7 +164,7 @@ def paysuccess():
             row = [r._asdict() for r in db.session.query(Invoices.amount, Invoices.agrmid).filter_by(invoice_id=orderNumber).all()]
             db.session.query(Invoices).filter_by(invoice_id=orderNumber).update({'invoice_pay' : True})
             db.session.commit()
-            paySuccess(row[0]['amount']. row[0]['agrmid'])
+            paySuccess(row[0]['amount'], row[0]['agrmid'])
             response = app.response_class(status=200)
             return response
     response = {'code':403,'name':'Forbidden','message':'Операция запрещена'}
@@ -532,7 +532,7 @@ def cctv_recPrepare():
         response = {'code':200,'name':'OK','message':'Хорошо', 'data':recordId }
         return jsonify(response)
     else:
-        response = {'code':resCode,'name':resText,'message':resTex}
+        response = {'code':resCode,'name':resText,'message':resText}
         abort (resCode)
 
 @app.route('/api/cctv/youtube', methods=['POST'])

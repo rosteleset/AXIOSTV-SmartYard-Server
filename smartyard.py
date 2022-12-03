@@ -1009,7 +1009,9 @@ def user_getBillingList():
             balance = str(format(round(itemd['balance'],2)))
             payment = str(format(round(itemd['pay'], 2)))
             internet = str(format(round(itemd['internet'], 2)))
-            data.append({'login':login,'address':address,'balans':balance,'payment':payment,'internet':internet,'internet_data':'','tv':'0.00','tv_data' :'','phone':'0.00','phone_data':'','cams':'0.00','cams_data':'','cams_name':''})
+            cams = str(format(round(itemd['cams'], 2)))
+            cams_name = str(itemd['cams_name'])
+            data.append({'login':login,'address':address,'balans':balance,'payment':payment,'internet':internet,'internet_data':'','tv':'0.00','tv_data' :'','phone':'0.00','phone_data':'','cams':cams,'cams_data':'','cams_name':cams_name})
     response = []
     response = {'code':200,'name':'OK','message':'Хорошо','data':data}
     return jsonify(response)

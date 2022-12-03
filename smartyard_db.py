@@ -129,13 +129,15 @@ class Invoices(db.Model):
     invoice_pay = db.Column(db.Boolean, default=False)
     contract = db.Column(db.Text, index=True)
     amount = db.Column(db.Integer)
+    agrmid = db.Column(db.Integer)
 
-    def __init__(self, invoice_id, invoice_time, invoice_pay, contract, amount):
+    def __init__(self, invoice_id, invoice_time, invoice_pay, contract, amount, agrmid):
         self.invoice_id = invoice_id
         self.invoice_time = invoice_time
         self.invoice_pay = invoice_pay
         self.contract = contract
         self.amount = amount
+        self.agrmid = agrmid
 
     def __repr__(self):
         return f""

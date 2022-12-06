@@ -1009,9 +1009,11 @@ def user_getBillingList():
             balance = str(format(round(itemd['balance'],2)))
             payment = str(format(round(itemd['pay'], 2)))
             internet = str(format(round(itemd['internet'], 2)))
+            internet_data = str(itemd['internet_data'])
             cams = str(format(round(itemd['cams'], 2)))
+            cams_data = str(itemd['cams_data'])
             cams_name = str(itemd['cams_name'])
-            data.append({'login':login,'address':address,'balans':balance,'payment':payment,'internet':internet,'internet_data':'','tv':'0.00','tv_data' :'','phone':'0.00','phone_data':'','cams':cams,'cams_data':'','cams_name':cams_name})
+            data.append({'login':login,'address':address,'balans':balance,'payment':payment,'internet':internet,'internet_data':internet_data,'tv':'0.00','tv_data' :'','phone':'0.00','phone_data':'','cams':cams,'cams_data':cams_data,'cams_name':cams_name})
     response = []
     response = {'code':200,'name':'OK','message':'Хорошо','data':data}
     return jsonify(response)
@@ -1053,4 +1055,3 @@ def not_found(error):
 
 if __name__ == '__main__':
     app.run(debug=True)
-

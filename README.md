@@ -64,7 +64,7 @@ python3 -m venv smartyard
 
 #Дале в терминале:
 
-/opt/smartyard/bin/pip install requests flask psycopg2-binary firebase-admin Flask-Migrate python-dotenv geopandas pytz clickhouse-connect pycryptodomex
+/opt/smartyard/bin/pip install requests flask psycopg2-binary firebase-admin Flask-Migrate python-dotenv geopandas pytz clickhouse-connect pycryptodomex pymysql
 
 export PYCURL_SSL_LIBRARY=openssl
 

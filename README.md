@@ -30,6 +30,7 @@ yum install -y python3-virtualenv postgresql-server nginx supervisor
 #Проверяем. В итоге должны установиться пакеты:
 
 rpm -qa | grep python3
+
 python3-libs-3.10.10-17.el7.x86_64
 python3-pip-wheel-22.3.1-2.el7.noarch
 python3-virtualenv-20.13.4-500.el7.noarch
@@ -63,7 +64,12 @@ python3 -m venv smartyard
 
 #Дале в терминале:
 
-/opt/smartyard/bin/pip install requests flask psycopg2-binary pycurl firebase-admin Flask-Migrate python-dotenv geopandas pytz clickhouse-connect pycryptodomex
+/opt/smartyard/bin/pip install requests flask psycopg2-binary firebase-admin Flask-Migrate python-dotenv geopandas pytz clickhouse-connect pycryptodomex
+
+export PYCURL_SSL_LIBRARY=openssl
+
+/opt/smartyard/bin/pip install pycurl --no-cache-dir
+ 
 
 cd smartyard
 

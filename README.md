@@ -25,7 +25,20 @@ mkdir smartyard
 
 #CentOS:
 
-yum install -y python36-virtualenv postgresql-server nginx supervisor
+yum install -y python3-virtualenv postgresql-server nginx supervisor
+
+#Проверяем. В итоге должны установиться пакеты:
+
+rpm -qa | grep python3
+python3-libs-3.10.10-17.el7.x86_64
+python3-pip-wheel-22.3.1-2.el7.noarch
+python3-virtualenv-20.13.4-500.el7.noarch
+python3-devel-3.10.10-17.el7.x86_64
+python3-setuptools-67.6.0-3.el7.noarch
+python3-3.10.10-17.el7.x86_64
+python3-pip-22.3.1-2.el7.noarch
+python3-setuptools-wheel-67.6.0-3.el7.noarch
+
 
 #Dabian/Ubuntu:
 
@@ -40,7 +53,7 @@ apt-get install python3-venv postgresql nginx supervisor libcurl4-openssl-dev li
 
 #CentOS:
 
-virtualenv-3.6 smartyard
+virtualenv smartyard
 
 
 #Dabian/Ubuntu:
@@ -50,23 +63,7 @@ python3 -m venv smartyard
 
 #Дале в терминале:
 
-smartyard/bin/pip install requests
-
-smartyard/bin/pip install flask
-
-smartyard/bin/pip install psycopg2-binary
-
-smartyard/bin/pip install pycurl
-
-smartyard/bin/pip install firebase-admin
-
-smartyard/bin/pip install Flask-Migrate
-
-smartyard/bin/pip install python-dotenv
-
-smartyard/bin/pip install geopandas
-
-smartyard/bin/pip install pytz
+/opt/smartyard/bin/pip install requests flask psycopg2-binary pycurl firebase-admin Flask-Migrate python-dotenv geopandas pytz clickhouse-connect pycryptodomex
 
 cd smartyard
 

@@ -6,11 +6,6 @@ from sqlalchemy.dialects.postgresql import UUID, MACADDR, TIMESTAMP, ARRAY
 from sqlalchemy.sql import exists, func
 from dotenv import load_dotenv
 
-app = Flask(__name__)
-
-def create_db_connection():
-    return SQLAlchemy(app)
-
 dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
 if os.path.exists(dotenv_path):
     load_dotenv(dotenv_path)
@@ -18,12 +13,20 @@ else:
     print('not loaded .env file')
     exit()
 
-app.config['SQLALCHEMY_DATABASE_URI'] = "postgresql://" + os.getenv('PG_USER') + ":" + os.getenv('PG_PASS') + "@" + os.getenv("PG_HOST") + ":5432/" + os.getenv('PG_DBNAME')
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+database_path = "postgresql://" + os.getenv('PG_USER') + ":" + os.getenv('PG_PASS') + "@" + os.getenv("PG_HOST") + ":5432/" + os.getenv('PG_DBNAME')
 
-db = create_db_connection()
-#db = SQLAlchemy(app)
-#db.init_app(app)
+db = SQLAlchemy()
+
+def create_db_connection(app, database_path=database_path):
+    app.config["SQLALCHEMY_DATABASE_URI"] = database_path
+    app.config['JSON_AS_ASCII'] = False
+    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+    db.app = app
+    db.init_app(app)
+
+    with app.app_context():
+        db.create_all()
 
 class Temps(db.Model):
     __tablename__ = 'temps'
@@ -75,8 +78,8 @@ class Users(db.Model):
     vttime = db.Column(db.DateTime(timezone=False))
     strims = db.Column(db.ARRAY(String))
     pushtoken = db.Column(db.Text)
-    platform = db.Column(db.String(7))
-    version =  db.Column(db.String(10))
+    platform = db.Column(db.Text)
+    version =  db.Column(db.Text)
     notify = db.Column(db.Boolean, default=True)
     money = db.Column(db.Boolean, default=True)
 
@@ -128,16 +131,12 @@ class Invoices(db.Model):
     invoice_time = db.Column(db.DateTime(timezone=False), server_default=func.current_timestamp())
     invoice_pay = db.Column(db.Boolean, default=False)
     contract = db.Column(db.Text, index=True)
-    amount = db.Column(db.Integer)
-    agrmid = db.Column(db.Integer)
-
-    def __init__(self, invoice_id, invoice_time, invoice_pay, contract, amount, agrmid):
+    
+    def __init__(self, invoice_id, invoice_time, invoice_pay, contract):
         self.invoice_id = invoice_id
         self.invoice_time = invoice_time
         self.invoice_pay = invoice_pay
         self.contract = contract
-        self.amount = amount
-        self.agrmid = agrmid
 
     def __repr__(self):
         return f""
@@ -174,8 +173,12 @@ class Devices(db.Model):
     latitude = db.Column(db.Numeric(12,9), nullable=True)
     server_id = db.Column(db.Integer, nullable=True)
     tariff_id = db.Column(db.Integer, nullable=True)
+    domophoneid = db.Column(db.Integer, nullable=True)
+    sippassword = db.Column(db.Text, nullable=True)
+    dtmf = db.Column(db.Integer, nullable=True)
+    camshot = db.Column(db.Text, nullable=True)
 
-    def __init__(self, device_id, device_uuid, device_mac, device_type, affiliation, owner, url, port, stream, is_active, title, address, longitude, latitude, server_id, tariff_id):
+    def __init__(self, device_id, device_uuid, device_mac, device_type, affiliation, owner, url, port, stream, is_active, title, address, longitude, latitude, server_id, tariff_id, domophoneid, sippassword, dtmf, camshot):
         self.device_id = device_id
         self.device_uuid = device_uuid
         self.device_mac = device_mac
@@ -192,6 +195,10 @@ class Devices(db.Model):
         self.latitude = latitude
         self.server_id = server_id
         self.tariff_id = tariff_id
+        self.domophoneid = domophoneid
+        self.sippassword = sippassword
+        self.dtmf = dtmf
+        self.camshot = camshot
 
     def __repr__(self):
         return f""
@@ -230,3 +237,4 @@ class Doors(db.Model):
 
     def __repr__(self):
         return f""
+    

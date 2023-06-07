@@ -1,0 +1,32 @@
+CREATE DATABASE smartyard;
+CREATE TABLE smartyard.plog (
+ `date` DateTime,
+ `uuid` UUID,
+ `image` UUID,
+ `uid` Int32,
+ `objectId` Int32,
+ `objectType` Int8 DEFAULT 0,
+ `objectMechanizma` Int8 DEFAULT 0,
+ `mechanizmaDescription` String,
+ `event` Int8,
+ `detail` String,
+ `preview` Int8 DEFAULT 0,
+ `hidden` Int8 DEFAULT 0,
+ `rfid` String,
+ `phone` String,
+ `opened` Int8 DEFAULT 0,
+ INDEX plog_objectId objectId TYPE set(100) GRANULARITY 1024,
+ INDEX plog_uuid uuid TYPE set(100) GRANULARITY 1024,
+ INDEX plog_uid uid TYPE set(100) GRANULARITY 1024,
+ INDEX plog_date date TYPE set(100) GRANULARITY 1024,
+ INDEX plog_hidden hidden TYPE set(100) GRANULARITY 1024,
+ INDEX plog_rfid rfid TYPE set(100) GRANULARITY 1024,
+ INDEX plog_phone phone TYPE set(100) GRANULARITY 1024,
+ INDEX plog_opened opened TYPE set(100) GRANULARITY 1024
+ )
+ ENGINE = MergeTree
+ PARTITION BY toYYYYMMDD(date)
+ ORDER BY date
+ TTL date + toIntervalMonth(6)
+ SETTINGS index_granularity = 1024;
+ 

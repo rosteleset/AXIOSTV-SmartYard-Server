@@ -2,8 +2,8 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 10.19
--- Dumped by pg_dump version 10.19
+-- Dumped from database version 13.14
+-- Dumped by pg_dump version 13.14
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -16,37 +16,11 @@ SET xmloption = content;
 SET client_min_messages = warning;
 SET row_security = off;
 
---
--- Name: plpgsql; Type: EXTENSION; Schema: -; Owner: 
---
-
-CREATE EXTENSION IF NOT EXISTS plpgsql WITH SCHEMA pg_catalog;
-
-
---
--- Name: EXTENSION plpgsql; Type: COMMENT; Schema: -; Owner: 
---
-
-COMMENT ON EXTENSION plpgsql IS 'PL/pgSQL procedural language';
-
-
---
--- Name: citext; Type: EXTENSION; Schema: -; Owner: 
---
-
-CREATE EXTENSION IF NOT EXISTS citext WITH SCHEMA public;
-
-
---
--- Name: EXTENSION citext; Type: COMMENT; Schema: -; Owner: 
---
-
-COMMENT ON EXTENSION citext IS 'data type for case-insensitive character strings';
-
-
 SET default_tablespace = '';
 
-SET default_with_oids = false;
+SET default_table_access_method = heap;
+
+\c smartyard;
 
 --
 -- Name: alembic_version; Type: TABLE; Schema: public; Owner: smartyard
@@ -76,14 +50,19 @@ CREATE TABLE public.devices (
     is_active boolean DEFAULT false,
     title character varying(64),
     address character varying(110),
-    longitude numeric(12,9),
-    latitude numeric(12,9),
+    longitude numeric(16,14),
+    latitude numeric(16,14),
     server_id integer,
     tariff_id integer,
     domophoneid integer,
     sippassword text,
     dtmf integer,
-    camshot text
+    camshot text,
+    paneltype integer,
+    panelip inet,
+    panellogin text,
+    panelpasswd text,
+    second_door integer
 );
 
 
@@ -122,7 +101,8 @@ CREATE TABLE public.doors (
     cam integer NOT NULL,
     icon character varying(14),
     entrance integer,
-    name text
+    name text,
+    open_trait text
 );
 
 
@@ -187,6 +167,19 @@ ALTER SEQUENCE public.invoices_invoice_id_seq OWNED BY public.invoices.invoice_i
 
 
 --
+-- Name: keys; Type: TABLE; Schema: public; Owner: smartyard
+--
+
+CREATE TABLE public.keys (
+    key bytea NOT NULL,
+    uid integer NOT NULL,
+    comment text
+);
+
+
+ALTER TABLE public.keys OWNER TO smartyard;
+
+--
 -- Name: records; Type: TABLE; Schema: public; Owner: smartyard
 --
 
@@ -247,7 +240,8 @@ CREATE TABLE public.settings (
     w_rabbit boolean DEFAULT false NOT NULL,
     frs boolean DEFAULT true NOT NULL,
     code integer,
-    guest timestamp without time zone
+    guest timestamp without time zone,
+    whiterabbit timestamp without time zone
 );
 
 
@@ -321,6 +315,45 @@ ALTER SEQUENCE public.types_id_seq OWNED BY public.types.id;
 
 
 --
+-- Name: upgrade; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.upgrade (
+    id integer NOT NULL,
+    androidupgrade integer,
+    androidforceupgrade integer,
+    harmonyupgrade integer,
+    harmonyforceupgrade integer,
+    iosupgrade integer,
+    iosforceupgrade integer
+);
+
+
+ALTER TABLE public.upgrade OWNER TO postgres;
+
+--
+-- Name: upgrade_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.upgrade_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.upgrade_id_seq OWNER TO postgres;
+
+--
+-- Name: upgrade_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.upgrade_id_seq OWNED BY public.upgrade.id;
+
+
+--
 -- Name: users; Type: TABLE; Schema: public; Owner: smartyard
 --
 
@@ -338,7 +371,10 @@ CREATE TABLE public.users (
     version text,
     uid integer,
     notify boolean DEFAULT true NOT NULL,
-    money boolean DEFAULT true NOT NULL
+    money boolean DEFAULT true NOT NULL,
+    manufacturer text,
+    model text,
+    osver text
 );
 
 
@@ -387,6 +423,154 @@ ALTER TABLE ONLY public.types ALTER COLUMN id SET DEFAULT nextval('public.types_
 
 
 --
+-- Name: upgrade id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.upgrade ALTER COLUMN id SET DEFAULT nextval('public.upgrade_id_seq'::regclass);
+
+
+--
+-- Data for Name: alembic_version; Type: TABLE DATA; Schema: public; Owner: smartyard
+--
+
+COPY public.alembic_version (version_num) FROM stdin;
+\.
+
+
+--
+-- Data for Name: devices; Type: TABLE DATA; Schema: public; Owner: smartyard
+--
+
+COPY public.devices (device_id, device_uuid, device_mac, device_type, affiliation, owner, url, port, stream, is_active, title, address, longitude, latitude, server_id, tariff_id, domophoneid, sippassword, dtmf, camshot, paneltype, panelip, panellogin, panelpasswd, second_door) FROM stdin;
+\.
+
+
+--
+-- Data for Name: doors; Type: TABLE DATA; Schema: public; Owner: smartyard
+--
+
+COPY public.doors (id, open, device_id, cam, icon, entrance, name, open_trait) FROM stdin;
+\.
+
+
+--
+-- Data for Name: invoices; Type: TABLE DATA; Schema: public; Owner: smartyard
+--
+
+COPY public.invoices (invoice_id, invoice_time, invoice_pay, contract) FROM stdin;
+\.
+
+
+--
+-- Data for Name: keys; Type: TABLE DATA; Schema: public; Owner: smartyard
+--
+
+COPY public.keys (key, uid, comment) FROM stdin;
+\.
+
+
+--
+-- Data for Name: records; Type: TABLE DATA; Schema: public; Owner: smartyard
+--
+
+COPY public.records (id, uid, url, fileurl, rtime, rdone) FROM stdin;
+\.
+
+
+--
+-- Data for Name: rights; Type: TABLE DATA; Schema: public; Owner: smartyard
+--
+
+COPY public.rights (uid, uid_right) FROM stdin;
+\.
+
+
+--
+-- Data for Name: settings; Type: TABLE DATA; Schema: public; Owner: smartyard
+--
+
+COPY public.settings (uid, intercom, asterisk, w_rabbit, frs, code, guest, whiterabbit) FROM stdin;
+\.
+
+
+--
+-- Data for Name: temps; Type: TABLE DATA; Schema: public; Owner: smartyard
+--
+
+COPY public.temps (userphone, smscode) FROM stdin;
+\.
+
+
+--
+-- Data for Name: types; Type: TABLE DATA; Schema: public; Owner: smartyard
+--
+
+COPY public.types (id, type) FROM stdin;
+1	cam
+2	newcam
+3	lock
+\.
+
+
+--
+-- Data for Name: upgrade; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.upgrade (id, androidupgrade, androidforceupgrade, harmonyupgrade, harmonyforceupgrade, iosupgrade, iosforceupgrade) FROM stdin;
+1	1	1	1	1	1	1
+\.
+
+
+--
+-- Name: devices_device_id_seq; Type: SEQUENCE SET; Schema: public; Owner: smartyard
+--
+
+SELECT pg_catalog.setval('public.devices_device_id_seq', 1, false);
+
+
+--
+-- Name: doors_id_seq; Type: SEQUENCE SET; Schema: public; Owner: smartyard
+--
+
+SELECT pg_catalog.setval('public.doors_id_seq', 1, false);
+
+
+--
+-- Name: invoices_invoice_id_seq; Type: SEQUENCE SET; Schema: public; Owner: smartyard
+--
+
+SELECT pg_catalog.setval('public.invoices_invoice_id_seq', 1, false);
+
+
+--
+-- Name: records_id_seq; Type: SEQUENCE SET; Schema: public; Owner: smartyard
+--
+
+SELECT pg_catalog.setval('public.records_id_seq', 1, false);
+
+
+--
+-- Name: temps_userphone_seq; Type: SEQUENCE SET; Schema: public; Owner: smartyard
+--
+
+SELECT pg_catalog.setval('public.temps_userphone_seq', 1, false);
+
+
+--
+-- Name: types_id_seq; Type: SEQUENCE SET; Schema: public; Owner: smartyard
+--
+
+SELECT pg_catalog.setval('public.types_id_seq', 1, false);
+
+
+--
+-- Name: upgrade_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.upgrade_id_seq', 1, true);
+
+
+--
 -- Name: alembic_version alembic_version_pkc; Type: CONSTRAINT; Schema: public; Owner: smartyard
 --
 
@@ -432,6 +616,14 @@ ALTER TABLE ONLY public.doors
 
 ALTER TABLE ONLY public.invoices
     ADD CONSTRAINT invoices_pkey PRIMARY KEY (invoice_id);
+
+
+--
+-- Name: keys keys_pkey; Type: CONSTRAINT; Schema: public; Owner: smartyard
+--
+
+ALTER TABLE ONLY public.keys
+    ADD CONSTRAINT keys_pkey PRIMARY KEY (key, uid);
 
 
 --
@@ -488,6 +680,14 @@ ALTER TABLE ONLY public.temps
 
 ALTER TABLE ONLY public.types
     ADD CONSTRAINT types_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: upgrade upgrade_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.upgrade
+    ADD CONSTRAINT upgrade_pkey PRIMARY KEY (id);
 
 
 --

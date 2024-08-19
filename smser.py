@@ -28,7 +28,7 @@ def smssend(phone,text):
 #            print(f'Success send sms to {user_phone} and text {sms_text}!')
             return response
     elif os.getenv('SMS_TYPE') == 'iqsms':
-        phone = '+7' + phone[1:]
+        phone = '+7' + str(phone)[1:]
         url = 'https://api.iqsms.ru/messages/v2/send/'
         response = requests.get(url,params={'login': os.getenv('SMS_USER'), 'password': os.getenv('SMS_PASS'), 'phone': phone, 'text': text})
 #        print(f'Success send sms to {phone} and text {text}!')

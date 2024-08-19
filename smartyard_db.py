@@ -2,7 +2,7 @@ import functools, os, uuid
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import create_engine, MetaData, Column, Integer, String, ForeignKey
-from sqlalchemy.dialects.postgresql import UUID, MACADDR, TIMESTAMP, ARRAY
+from sqlalchemy.dialects.postgresql import UUID, MACADDR, TIMESTAMP, ARRAY, BYTEA, INET
 from sqlalchemy.sql import exists, func
 from dotenv import load_dotenv
 
@@ -51,8 +51,9 @@ class Settings(db.Model):
     frs = db.Column(db.Boolean, default=True)
     code = db.Column(db.Integer)
     guest = db.Column(db.DateTime(timezone=False))
+    whiterabbit = db.Column(db.DateTime(timezone=False))
 
-    def __init__(self, uid, intercom, asterisk, w_rabbit, frs, code, guest ):
+    def __init__(self, uid, intercom, asterisk, w_rabbit, frs, code, guest, whiterabbit ):
         self.uid = uid
         self.intercom = intercom
         self.asterisk = asterisk
@@ -60,6 +61,7 @@ class Settings(db.Model):
         self.frs = frs
         self.code = code
         self.guest = guest
+        self.whiterabbit = whiterabbit
 
     def __repr__(self):
         return f""
@@ -80,10 +82,13 @@ class Users(db.Model):
     pushtoken = db.Column(db.Text)
     platform = db.Column(db.Text)
     version =  db.Column(db.Text)
+    manufacturer =  db.Column(db.Text)
+    model =  db.Column(db.Text)
+    osver =  db.Column(db.Text)
     notify = db.Column(db.Boolean, default=True)
     money = db.Column(db.Boolean, default=True)
 
-    def __init__(self, uuid, userphone, name, patronymic, email, videotoken, uid, vttime, strims, pushtoken, platform, version, notify, money):
+    def __init__(self, uuid, userphone, name, patronymic, email, videotoken, uid, vttime, strims, pushtoken, platform, version, manufacturer, model, osver, notify, money):
         self.uuid = uuid
         self.userphone = userphone
         self.name = name
@@ -96,6 +101,9 @@ class Users(db.Model):
         self.pushtoken = pushtoken
         self.platform = platform
         self.version = version
+        self.manufacturer = manufacturer
+        self.model = model
+        self.osver = osver
         self.notify = notify
         self.money = money
 
@@ -177,8 +185,12 @@ class Devices(db.Model):
     sippassword = db.Column(db.Text, nullable=True)
     dtmf = db.Column(db.Integer, nullable=True)
     camshot = db.Column(db.Text, nullable=True)
+    paneltype = db.Column(db.Integer, nullable=True)
+    panelip = db.Column(INET(), nullable=True)
+    panellogin = db.Column(db.Text, nullable=True)
+    panelpasswd = db.Column(db.Text, nullable=True)
 
-    def __init__(self, device_id, device_uuid, device_mac, device_type, affiliation, owner, url, port, stream, is_active, title, address, longitude, latitude, server_id, tariff_id, domophoneid, sippassword, dtmf, camshot):
+    def __init__(self, device_id, device_uuid, device_mac, device_type, affiliation, owner, url, port, stream, is_active, title, address, longitude, latitude, server_id, tariff_id, domophoneid, sippassword, dtmf, camshot, paneltype, panelip, panellogin, panelpasswd):
         self.device_id = device_id
         self.device_uuid = device_uuid
         self.device_mac = device_mac
@@ -199,6 +211,10 @@ class Devices(db.Model):
         self.sippassword = sippassword
         self.dtmf = dtmf
         self.camshot = camshot
+        self.paneltype = paneltype
+        self.panelip = panelip
+        self.panellogin = panellogin
+        self.panelpasswd = panelpasswd
 
     def __repr__(self):
         return f""
@@ -207,7 +223,7 @@ class Rights(db.Model):
     __tablename__ = 'rights'
 
     uid = db.Column(db.Integer, nullable=False, primary_key=True)
-    uid_right = db.Column(db.ARRAY(Integer), nullable=False)
+    uid_right = db.Column(db.ARRAY(Integer), nullable=True)
 
     def __init__(self, uid, uid_right):
         self.uid = uid
@@ -226,7 +242,8 @@ class Doors(db.Model):
     icon = db.Column(db.String(14), nullable=False)
     entrance = db.Column(db.Integer, nullable=False)
     name = db.Column(db.Text, nullable=False)
-    def __init__(self, id, open, device_id, cam, icon, entrance, name):
+    open_trait = db.Column(db.Text, nullable=True)
+    def __init__(self, id, open, device_id, cam, icon, entrance, name, open_trait):
         self.id = id
         self.open = open
         self.device_id = device_id
@@ -234,7 +251,46 @@ class Doors(db.Model):
         self.icon = icon
         self.entrance = entrance
         self.name = name
+        self.open_trait = open_trait
 
     def __repr__(self):
         return f""
-    
+
+class Keys(db.Model):
+    __tablename__ = 'keys'
+
+    key = db.Column(BYTEA(), nullable=False, primary_key=True)
+    uid = db.Column(db.Integer, nullable=False)
+    comment = db.Column(db.Text, nullable=True)
+
+    def __init__(self, key, uid, comment):
+        self.key = key
+        self.uid = uid
+        self.comment = comment
+
+    def __repr__(self):
+        return f""
+
+class Upgrade(db.Model):
+    __tablename__ = 'upgrade'
+
+    id = db.Column(db.Integer, nullable=False, autoincrement=True, primary_key=True)
+    androidupgrade = db.Column(db.Integer, nullable=False)
+    androidforceupgrade = db.Column(db.Integer, nullable=False)
+    harmonyupgrade = db.Column(db.Integer, nullable=False)
+    harmonyforceupgrade = db.Column(db.Integer, nullable=False)
+    iosupgrade = db.Column(db.Integer, nullable=False)
+    iosforceupgrade = db.Column(db.Integer, nullable=False)
+
+    def __init__(self, id, androidupgrade,androidforceupgrade,harmonyupgrade,harmonyforceupgrade,iosupgrade,iosforceupgrade):
+        self.id = id
+        self.androidupgrade = androidupgrade
+        self.androidforceupgrade = androidforceupgrade
+        self.harmonyupgrade = harmonyupgrade
+        self.harmonyforceupgrade = harmonyforceupgrade
+        self.iosupgrade = iosupgrade
+        self.iosforceupgrade = iosforceupgrade
+
+    def __repr__(self):
+        return f""
+

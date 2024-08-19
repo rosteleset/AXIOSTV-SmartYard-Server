@@ -75,6 +75,8 @@ cd smartyard
 
 mv example.env .env
 
+cp dump.sql /tmp/dump.sql
+
 su - postgres
 
 psql
@@ -87,18 +89,13 @@ GRANT ALL PRIVILEGES ON DATABASE smartyard TO smartyard;
 
 \q
 
+psql < /tmp/dump.sql
+
 exit
 
-export FLASK_APP=app.py
+./smartyard.py
 
-bin/flask db init
-
-bin/flask db migrate
-
-bin/flask db upgrade
-
-./app.py
-
+Смотрим и устраняем все ошибки.
 
 Основные настройки, в т.ч. подключение к базе данных (PG_...) и серверу kannel (KANNEL_), а также имя отправителя смс (поддерживается не всеми смс-агрегаторами) и текстовая строка перед 4-х значным кодом подтверждения (текст смс) находятся в файле .env и интуитвно понятны. Кроме того, необходимо настроить nginx, добавив в конфиг следующие строчки:
  

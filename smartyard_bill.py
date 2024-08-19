@@ -19,7 +19,11 @@ billapilogin=os.getenv('BILLAPI_LOGIN')
 billapipass=os.getenv('BILLAPI_PASS')
 charset='utf8mb4'
 
-uid_phones = {1:{'phone':['89997902451','89997901321'],'login':10001,'address':'г. Ярославль, ул. Советская, д.1 кв. 10','cams_open':True,'cams_paid':True},2:{'phone':['89997902450','89997901320'],'login':10002,'address':'','cams_open':True,'cams_paid':True}}
+uid_phones = {
+1:{'phone':['89272510551','89173365214','89997901321'],'login':10001,'address':'г. Волгоград, ул. Невская, д.18б кв. 10','cams_open':True,'cams_paid':True},
+2:{'phone':['89997902450','89997901320'],'login':10002,'address':'г. Кстов, ул. Ленина, д. 1','cams_open':True,'cams_paid':True},
+3:{'phone':['89880557820'],'login':10003,'address':'г. Волгоград, ул. Невская, д.18б кв. 8','cams_open':True,'cams_paid':True},
+}
 
 
 def lastDay():
@@ -65,17 +69,17 @@ def billingList(userphone):
     for uid in uids:
         row['login'] = uid_phones[uid]['login']
         row['address'] = uid_phones[uid]['address']
-        row['internet'] = float(500)
+        row['internet'] = float(0)
         row['internet_data'] = ''
-        row['tv'] = float(200)
+        row['tv'] = float(0)
         row['tv_data'] = ''
-        row['phone'] = float(300)
+        row['phone'] = float(0)
         row['phone_data'] = ''
-        row['cams'] = float(100)
+        row['cams'] = float(261)
         row['cams_data'] = ''
         row['cams_name'] = 'Умное пространство'
-        row['balans'] = float(100)
-        row['payment'] = float(1000)
+        row['balans'] = float(0)
+        row['payment'] = float(261)
         rows.append(row)
     return rows
 
@@ -86,11 +90,34 @@ def paySuccess(amount, agrmid):
     return
 
 def uidFromflatNumber(address, flat):
-    uid = 1
+    uid = 0
+    fulladdress = address + ' кв. ' + str(flat)
+    for key,value in uid_phones.items():
+        if fulladdress == value['address']:
+            uid = key
     return uid
+
+def uidFromAddress(address):
+    uid = None
+    for key,value in uid_phones.items():
+        if address == value['address']:
+            uid = key
+    return uid
+
+def addressFromUid(uid):
+    address = uid_phones[int(uid)]['address']
+    return address
+
+def flatFromUid(uid):
+    flat = int(uid_phones[int(uid)]['address'].split("\r")[0].split("кв.")[1])
+    return flat
 
 def userPhones(uid):
     try:
         return uid_phones[int(uid)]['phone']
     except:
         return []
+
+def newInvoice(login, amount, phone):
+    return 1
+    

@@ -25,7 +25,7 @@ mkdir smartyard
 
 #CentOS:
 
-yum install -y python3-virtualenv postgresql-server nginx supervisor asterisk redis
+yum install -y python3-virtualenv postgresql-server nginx supervisor asterisk redis clickhouse-server
 
 #Проверяем. В итоге должны установиться пакеты:
 
@@ -43,7 +43,7 @@ python3-setuptools-wheel-67.6.0-3.el7.noarch
 
 #Dabian/Ubuntu:
 
-apt-get install python3-venv postgresql nginx supervisor libcurl4-openssl-dev libssl-dev gcc python3-dev asterisk redis
+apt-get install python3-venv postgresql nginx supervisor libcurl4-openssl-dev libssl-dev gcc python3-dev asterisk redis clickhouse-server
 
 #Переносим файл smartyard.ini в /etc/supervisord.d 
 
@@ -143,6 +143,8 @@ stopsignal = INT
 #Стартуем сервисы:
 
 systemctl start redis
+
+systemctl start clickhouse-server
 
 systemctl start supervisord
 

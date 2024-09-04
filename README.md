@@ -97,7 +97,30 @@ exit
 
 Смотрим и устраняем все ошибки.
 
-Основные настройки, в т.ч. подключение к базе данных (PG_...) и серверу kannel (KANNEL_), а также имя отправителя смс (поддерживается не всеми смс-агрегаторами) и текстовая строка перед 4-х значным кодом подтверждения (текст смс) находятся в файле .env и интуитвно понятны. Кроме того, необходимо настроить nginx, добавив в конфиг следующие строчки:
+Основные настройки, в т.ч. подключение к базе данных (PG_...) и серверу kannel (KANNEL_), а также имя отправителя смс (поддерживается не всеми смс-агрегаторами) и текстовая строка перед 4-х значным кодом подтверждения (текст смс) находятся в файле .env и интуитвно понятны. 
+
+Создаем файл /etc/supervisord.d/smartyard.ini
+
+[program:smartyard]
+
+#user=smartyard
+
+directory = /opt/smartyard
+
+command = /opt/smartyard/smartyard.py
+
+autostart = true
+
+autorestart = true
+
+stdout_logfile = /var/log/smartyard_out.log
+
+stderr_logfile = /var/log/smartyard_err.log
+
+stopsignal = INT
+
+
+Далее необходимо настроить nginx, добавив в конфиг следующие строчки:
  
  location /api {
  
@@ -117,8 +140,13 @@ exit
     
   }
 
-#Стартуем supervisord:
+#Стартуем сервисы:
+
+systemctl start redis
+
 systemctl start supervisord
+
+systemctl start asterisk
 
 
 Лицензия и условия использования

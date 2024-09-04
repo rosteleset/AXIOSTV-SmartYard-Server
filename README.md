@@ -25,7 +25,7 @@ mkdir smartyard
 
 #CentOS:
 
-yum install -y python3-virtualenv postgresql-server nginx supervisor
+yum install -y python3-virtualenv postgresql-server nginx supervisor asterisk redis
 
 #Проверяем. В итоге должны установиться пакеты:
 
@@ -43,7 +43,7 @@ python3-setuptools-wheel-67.6.0-3.el7.noarch
 
 #Dabian/Ubuntu:
 
-apt-get install python3-venv postgresql nginx supervisor libcurl4-openssl-dev libssl-dev gcc python3-dev
+apt-get install python3-venv postgresql nginx supervisor libcurl4-openssl-dev libssl-dev gcc python3-dev asterisk redis
 
 #Переносим файл smartyard.ini в /etc/supervisord.d 
 

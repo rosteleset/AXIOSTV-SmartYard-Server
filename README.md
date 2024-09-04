@@ -93,6 +93,18 @@ psql < /tmp/dump.sql
 
 exit
 
+#Стартуем сервисы:
+
+systemctl start redis
+
+systemctl start clickhouse-server
+
+systemctl start supervisord
+
+systemctl start asterisk
+
+Далее:
+
 ./smartyard.py
 
 Смотрим и устраняем все ошибки.
@@ -140,15 +152,7 @@ stopsignal = INT
     
   }
 
-#Стартуем сервисы:
 
-systemctl start redis
-
-systemctl start clickhouse-server
-
-systemctl start supervisord
-
-systemctl start asterisk
 
 
 Лицензия и условия использования

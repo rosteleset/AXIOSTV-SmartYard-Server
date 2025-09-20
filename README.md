@@ -64,7 +64,7 @@ python3 -m venv smartyard
 
 #Дале в терминале:
 
-/opt/smartyard/bin/pip install requests flask psycopg2-binary firebase-admin Flask-Migrate python-dotenv geopandas pytz clickhouse-connect pycryptodomex pymysql redis Flask-HTTPAuth tzlocal
+/opt/smartyard/bin/pip install requests flask psycopg2-binary firebase-admin Flask-Migrate python-dotenv geopandas pytz clickhouse-connect pycryptodomex pymysql redis Flask-HTTPAuth tzlocal reportlab num2words pydantic asyncpg
 
 export PYCURL_SSL_LIBRARY=openssl
 
@@ -158,6 +158,7 @@ stopsignal = INT
 Лицензия и условия использования
 
 Авторские права на код принаддежат АКСИОСТВ.
-API в части взаимодействия с мобильными приложениями, основано на коде ЛанТы.
+
+API в части взаимодействия с мобильными приложениями версии основано на коде ЛанТы. В текущей версии API значительно переработан и полностью не совместим.
 
 Данный проект опубликован под стандартной общественной лицензией GNU GPLv3. Вы можете модифицировать и использовать наши наработки в своих проектах, в т.ч. коммерческих, при обязательном условии публикации их исходного кода. Также мы готовы рассмотреть ваши Pull requests, если вы хотите чтобы наш проект развивался с учётом ваших модификаций и доработок.

@@ -20,9 +20,9 @@ billapipass=os.getenv('BILLAPI_PASS')
 charset='utf8mb4'
 
 uid_phones = {
-1:{'phone':['89103523378','89624380886','89997901321'],'login':10001,'address':'г. Пятигорск, ул. Невская, д.18б кв. 10','cams_open':True,'cams_paid':True,'camsdata':'2025-11-11'},
-2:{'phone':['89103523378','89624380886','89997901321'],'login':10002,'address':'г. Пятигорск, ул. Ленина, д.1 кв. 5','cams_open':True,'cams_paid':False,'camsdata':'2025-09-09'},
-3:{'phone':['89880557820'],'login':10003,'address':'г. Волгоград, ул. Невская, д.18б кв. 8','cams_open':True,'cams_paid':True},
+1:{'phone':['89103523378','89624380887','89997901331'],'login':10001,'address':'г. Пятигорск, ул. Невская, д.18б кв. 10','cams_open':True,'cams_paid':True,'camsdata':'2025-11-11'},
+2:{'phone':['89103523378','89624380887','89997901331'],'login':10002,'address':'г. Пятигорск, ул. Ленина, д.1 кв. 5','cams_open':True,'cams_paid':False,'camsdata':'2025-09-09'},
+3:{'phone':['89880553131'],'login':10003,'address':'г. Волгоград, ул. Невская, д.18б кв. 8','cams_open':True,'cams_paid':True},
 }
 
 

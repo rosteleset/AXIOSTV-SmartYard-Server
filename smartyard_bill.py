@@ -20,8 +20,8 @@ billapipass=os.getenv('BILLAPI_PASS')
 charset='utf8mb4'
 
 uid_phones = {
-1:{'phone':['89272510551','89173365214','89997901321'],'login':10001,'address':'г. Волгоград, ул. Невская, д.18б кв. 10','cams_open':True,'cams_paid':True},
-2:{'phone':['89997902450','89997901320'],'login':10002,'address':'г. Кстов, ул. Ленина, д. 1','cams_open':True,'cams_paid':True},
+1:{'phone':['89103523378','89624380886','89997901321'],'login':10001,'address':'г. Пятигорск, ул. Невская, д.18б кв. 10','cams_open':True,'cams_paid':True,'camsdata':'2025-11-11'},
+2:{'phone':['89103523378','89624380886','89997901321'],'login':10002,'address':'г. Пятигорск, ул. Ленина, д.1 кв. 5','cams_open':True,'cams_paid':False,'camsdata':'2025-09-09'},
 3:{'phone':['89880557820'],'login':10003,'address':'г. Волгоград, ул. Невская, д.18б кв. 8','cams_open':True,'cams_paid':True},
 }
 
@@ -64,25 +64,28 @@ def addressList(userphone):
 
 def billingList(userphone):
     uids = uidFrom(userphone)
-    rows = []
-    row = {}
+    billingList = []
     for uid in uids:
-        row['login'] = uid_phones[uid]['login']
+        print(f"{uid}")
+        row = {}
+        row['login'] = str(uid_phones[uid]['login'])
         row['address'] = uid_phones[uid]['address']
-        row['internet'] = float(0)
-        row['internet_data'] = ''
-        row['tv'] = float(0)
-        row['tv_data'] = ''
-        row['phone'] = float(0)
-        row['phone_data'] = ''
-        row['cams'] = float(261)
-        row['cams_data'] = ''
-        row['cams_name'] = 'Умное пространство'
+        row['internet'] = str(float(0))
+        row['internetdata'] = ''
+        row['tv'] = str(float(0))
+        row['tvdata'] = ''
+        row['phone'] = str(float(0))
+        row['phonedata'] = ''
+        row['cams'] = str(float(261))
+        row['camsdata'] = str(uid_phones[uid]['camsdata'])
+        row['camsname'] = 'Умное пространство'
         row['balans'] = float(0)
         row['payment'] = float(261)
-        rows.append(row)
-    return rows
-
+        row['invoice'] = True
+        row['detail'] = True
+        row['receipt'] = True
+        billingList.append(row)
+    return billingList
 
 def paySuccess(amount, agrmid):
     #print (f" {amount/100} {agrmid} {str(uuid.uuid4())}")
@@ -108,6 +111,10 @@ def addressFromUid(uid):
     address = uid_phones[int(uid)]['address']
     return address
 
+def fullAddressFromUid(uid):
+    address = uid_phones[int(uid)]['address']
+    return address
+
 def flatFromUid(uid):
     flat = int(uid_phones[int(uid)]['address'].split("\r")[0].split("кв.")[1])
     return flat
@@ -118,6 +125,15 @@ def userPhones(uid):
     except:
         return []
 
-def newInvoice(login, amount, phone):
-    return 1
-    
+def newInvoice(login, amount, phone, customer):
+    if customer != "SmartYard":
+        customer = 'Пупкин Иван Иванович'
+    rows = {'clientName': customer, 'invoice_id': 1, 'invoice_num': 1}
+    return rows
+
+def getDetail(login, year):
+    return [{'id': 31519, 'date': '00:00 01.10.2025', 'sum': -2160.0, 'dsc': 'Активация тарифного плана'}, {'id': 22244, 'date': '14:06 19.09.2025', 'sum': 8640.0, 'dsc': 'Банк'}, {'id': 30872, 'date': '09:25 01.09.2025', 'sum': -2160.0, 'dsc': 'Активация тарифного плана'}, {'id': 30195, 'date': '00:00 01.08.2025', 'sum': -2160.0, 'dsc': 'Активация тарифного плана'}, {'id': 29270, 'date': '12:41 25.06.2025', 'sum': -2160.0, 'dsc': 'CHANGE_TP'}]
+
+def getReceipt(login, receiptId):
+    return {'date': '30.10.2025', 'customer': 'ООО «БАРБАРИС» БАРБАРИСОВ Сергей Владимирович', 'sum': 2160.0, 'dsc': 'Активация тарифного плана', 'start': '01.10.2025г.', 'end': '30.10.2025г.', 'service': 'доступ в сеть Интернет'}
+

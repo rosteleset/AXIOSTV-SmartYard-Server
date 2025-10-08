@@ -52,8 +52,8 @@ def camsActiv(uid):
 def addressList(userphone):
     uids = uidFrom(userphone)
     rows = []
-    row = {}
     for uid in uids:
+        row = {}
         row['uid'] = uid
         row['login'] = uid_phones[uid]['login']
         row['address'] = uid_phones[uid]['address']
@@ -66,7 +66,6 @@ def billingList(userphone):
     uids = uidFrom(userphone)
     billingList = []
     for uid in uids:
-        print(f"{uid}")
         row = {}
         row['login'] = str(uid_phones[uid]['login'])
         row['address'] = uid_phones[uid]['address']

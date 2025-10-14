@@ -35,6 +35,7 @@ CREATE TABLE smartyard.event (
  `date` DateTime,
  `startTime` DateTime,
  `endTime` DateTime,
+ `eventType` Int8 DEFAULT 0,
  `uuid` UUID,
  `image` UUID,
 

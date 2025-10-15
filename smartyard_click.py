@@ -38,6 +38,42 @@ def getPlogDays(uid):
         client.close()
         return []
 
+def getCamPlogs(camId,date):
+    uid = 1
+    client = clickhouse_connect.get_client(host='localhost', username='default', password='', compress=False)
+    clickreq = f"select startTime, endTime, eventType, deviceDesc, uuid, image, preview, analisis, analisDesc from smartyard.event where (toYYYYMMDD(startTime) = {date}) and (deviceId = {camId}) order by startTime desc"
+    try:
+        result = client.query(clickreq, query_tz=tz_info)
+        client.close()
+        return result.result_rows
+    except:
+        client.close()
+        return []
+
+def getCamPlogDaysEvents(camId,events):
+    uid = 1
+    client = clickhouse_connect.get_client(host='localhost', username='default', password='', compress=False)
+    clickreq = f"select toYYYYMMDD(startTime) as day, count(startTime) as events from smartyard.event where (deviceId = {camId}) and (eventType in {events}) group by toYYYYMMDD(startTime) order by toYYYYMMDD(startTime) desc"
+    try:
+        result = client.query(clickreq, query_tz=tz_info)
+        client.close()
+        return result.result_rows
+    except:
+        client.close()
+        return []
+
+def getCamPlogDays(camId):
+    uid = 1
+    client = clickhouse_connect.get_client(host='localhost', username='default', password='', compress=False)
+    clickreq = f"select toYYYYMMDD(startTime) as day, count(startTime) as events from smartyard.event where (deviceId = {camId}) group by toYYYYMMDD(startTime) order by toYYYYMMDD(startTime) desc"
+    try:
+        result = client.query(clickreq, query_tz=tz_info)
+        client.close()
+        return result.result_rows
+    except:
+        client.close()
+        return []
+
 def putEvent(clickhouse_data, clickhouse_column):
     client = clickhouse_connect.get_client(host='localhost', username='default', password='', compress=False)
     try:
@@ -47,5 +83,3 @@ def putEvent(clickhouse_data, clickhouse_column):
     except:
         client.close()
         return []
-
-#print(f"{getPlogs(52120,'20230517')}")

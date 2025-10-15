@@ -1,4 +1,5 @@
 CREATE DATABASE smartyard;
+
 CREATE TABLE smartyard.plog (
  `date` DateTime,
  `uuid` UUID,
@@ -51,6 +52,6 @@ CREATE TABLE smartyard.event (
  ENGINE = MergeTree
  PARTITION BY toYYYYMMDD(startTime)
  ORDER BY startTime
- TTL date + toIntervalMonth(6)
+ TTL startTime + toIntervalMonth(6)
  SETTINGS index_granularity = 1024;
  

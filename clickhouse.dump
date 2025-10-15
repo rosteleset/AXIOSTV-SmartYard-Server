@@ -29,9 +29,9 @@ CREATE TABLE smartyard.plog (
  ORDER BY date
  TTL date + toIntervalMonth(6)
  SETTINGS index_granularity = 1024;
+
 CREATE TABLE smartyard.event (
  `deviceId` Int32,
- `date` DateTime,
  `startTime` DateTime,
  `endTime` DateTime,
  `eventType` Int8 DEFAULT 0,
@@ -42,7 +42,6 @@ CREATE TABLE smartyard.event (
  `analisis` UUID,
  `analisDesc` String,
  INDEX plog_deviceId deviceId TYPE set(100) GRANULARITY 1024,
- INDEX plog_date date TYPE set(100) GRANULARITY 1024,
  INDEX plog_startTime startTime TYPE set(100) GRANULARITY 1024,
  INDEX plog_endTime endTime TYPE set(100) GRANULARITY 1024,
  INDEX plog_eventType eventType TYPE set(100) GRANULARITY 1024,

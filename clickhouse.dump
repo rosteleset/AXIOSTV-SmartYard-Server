@@ -50,7 +50,7 @@ CREATE TABLE smartyard.event (
  )
  ENGINE = MergeTree
  PARTITION BY toYYYYMMDD(startTime)
- ORDER BY date
+ ORDER BY startTime
  TTL date + toIntervalMonth(6)
  SETTINGS index_granularity = 1024;
  

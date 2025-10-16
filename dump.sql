@@ -94,7 +94,8 @@ CREATE TABLE public.devices (
     onvifip inet,
     onvifport integer,
     onviflogin text,
-    onvifpasswd text
+    onvifpasswd text,
+    onviffilter integer default 0
 );
 
 

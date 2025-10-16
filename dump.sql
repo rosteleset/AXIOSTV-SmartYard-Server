@@ -90,7 +90,11 @@ CREATE TABLE public.devices (
     panelip inet,
     panellogin text,
     panelpasswd text,
-    second_door integer
+    second_door integer,
+    onvifip inet,
+    onvifport integer,
+    onviflogin text,
+    onvifpasswd text
 );
 
 

@@ -31,27 +31,28 @@ CREATE TABLE smartyard.plog (
  TTL date + toIntervalMonth(6)
  SETTINGS index_granularity = 1024;
 
-CREATE TABLE smartyard.event (
- `deviceId` Int32,
- `startTime` DateTime,
- `endTime` DateTime,
- `eventType` Int8 DEFAULT 0,
- `deviceDesc` String,
- `uuid` UUID,
- `image` UUID,
- `preview` Int8 DEFAULT 0,
- `analisis` UUID,
- `analisDesc` String,
- INDEX plog_deviceId deviceId TYPE set(100) GRANULARITY 1024,
- INDEX plog_startTime startTime TYPE set(100) GRANULARITY 1024,
- INDEX plog_endTime endTime TYPE set(100) GRANULARITY 1024,
- INDEX plog_eventType eventType TYPE set(100) GRANULARITY 1024,
- INDEX plog_uuid uuid TYPE set(100) GRANULARITY 1024,
- INDEX plog_analisDesc analisDesc TYPE set(100) GRANULARITY 1024
- )
- ENGINE = MergeTree
- PARTITION BY toYYYYMMDD(startTime)
- ORDER BY startTime
- TTL startTime + toIntervalMonth(6)
- SETTINGS index_granularity = 1024;
+CREATE TABLE smartyard.events
+(
+    `deviceId` Int32,
+    `startTime` DateTime,
+    `endTime` DateTime,
+    `eventType` Int8 DEFAULT 0,
+    `deviceDesc` String,
+    `uuid` UUID,
+    `image` UUID,
+    `preview` Int8 DEFAULT 0,
+    `analisis` UUID DEFAULT NULL,
+    `analisDesc` String,
+    INDEX plog_deviceId deviceId TYPE set(100) GRANULARITY 1024,
+    INDEX plog_startTime startTime TYPE set(100) GRANULARITY 1024,
+    INDEX plog_endTime endTime TYPE set(100) GRANULARITY 1024,
+    INDEX plog_eventType eventType TYPE set(100) GRANULARITY 1024,
+    INDEX plog_uuid uuid TYPE set(100) GRANULARITY 1024,
+    INDEX plog_analisDesc analisDesc TYPE set(100) GRANULARITY 1024
+)
+ENGINE = MergeTree
+PARTITION BY toYYYYMMDD(startTime)
+ORDER BY startTime
+TTL startTime + toIntervalMonth(6)
+SETTINGS index_granularity = 1024;
  

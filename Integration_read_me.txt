@@ -51,7 +51,7 @@ def billingList(userphone):
 
 Используется url '/bill/api/..', который фильтруется в nginx.conf от запросов с внешнего мира.
 
-Основные методы:
+Методы управления устройствами:
 
 /bill/api/devices_list/ на входе пусто, на выходе json {'device_id':123, 'device_type':'cam', 'url':'vd.sait.ru', 'stream':'rtsp://ip:port/url', 'is_active':True, 'title':'Дверь в подьезд', 'address':'г. Москва, .....', 'longitude':45.12345678, 'latitude':47.12345678, 'record_days':10, 'domophoneid':1, 'sippassword':'Passwd', 'dtmf':1, 'camshot':'url camshot', 'paneltype':1, 'panelip':'192.168.1.1', 'panellogin':'Login', 'panelpasswd':'passwd'}
 
@@ -102,6 +102,9 @@ panelpasswd   пароль домофона (указывается только
 Особые указания: 
 1. сложные и/или составные устройства указываются и как камера и как замок. Таким образом, можно использовать как домофоны, так и самим комбинировать точку прохода/проезда (замки, ворота или шлагбаумы с камерой).
 2. Неиспользуемые переменные указываются в запросах как 'None'
+
+
+Методы управления правами на устройства:
 
 /bill/api/rights_list/ на вход получает uid абонента в формате json - {'uid':12345}, на выходе выдает массив [{'device_id':1 ,'device_type':'cam' , 'title': 'Камера на входе']
 

@@ -205,7 +205,7 @@ class Devices(db.Model):
     longitude = db.Column(db.Numeric(12,9), nullable=True) # Географические координаты для отображения в МП, обязательное поле
     latitude = db.Column(db.Numeric(12,9), nullable=True) # Географические координаты для отображения в МП, обязательное поле
     server_id = db.Column(db.Integer, nullable=True) # ID видеосервера, не обязательное поле
-    tariff_id = db.Column(db.Integer, nullable=True) # ID тарифа, не обязательное поле
+    record_days = db.Column(db.Integer, nullable=True) # ID тарифа, не обязательное поле
     domophoneid = db.Column(db.Integer, nullable=True) # Логин SIP. Внимание, на панеле эта цифра + 100000
     sippassword = db.Column(db.Text, nullable=True) # Gfhjkm ЫШЗ
     dtmf = db.Column(db.Integer, nullable=True) # Код открытия
@@ -215,7 +215,7 @@ class Devices(db.Model):
     panellogin = db.Column(db.Text, nullable=True) # Логин консоли домофона
     panelpasswd = db.Column(db.Text, nullable=True) # Пароль консоли домофона
 
-    def __init__(self, device_id, device_uuid, device_mac, device_type, affiliation, owner, url, port, stream, is_active, title, address, longitude, latitude, server_id, tariff_id, domophoneid, sippassword, dtmf, camshot, paneltype, panelip, panellogin, panelpasswd):
+    def __init__(self, device_id, device_uuid, device_mac, device_type, affiliation, owner, url, port, stream, is_active, title, address, longitude, latitude, server_id, record_days, domophoneid, sippassword, dtmf, camshot, paneltype, panelip, panellogin, panelpasswd):
         self.device_id = device_id
         self.device_uuid = device_uuid
         self.device_mac = device_mac
@@ -230,7 +230,7 @@ class Devices(db.Model):
         self.address = address
         self.longitude = longitude
         self.latitude = latitude
-        self.server_id = server_id
+        self.record_days = record_days
         self.tariff_id = tariff_id
         self.domophoneid = domophoneid
         self.sippassword = sippassword

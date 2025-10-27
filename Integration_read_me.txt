@@ -44,3 +44,69 @@ def billingList(userphone):
         row['receipt'] = True # Bool, разрешено ли показывать кнопку «Получить акт»
         billingList.append(row)
     return billingList 
+
+
+
+Для управления системой из внешних программ (Billing, CRM) существует rest api с POST запросами.
+
+Используется url '/bill/api/..', который фильтруется в nginx.conf от запросов с внешнего мира.
+
+Основные методы:
+
+/bill/api/devices_list/ на входе пусто, на выходе json {'device_id':123, 'device_type':'cam', 'url':'vd.sait.ru', 'stream':'rtsp://ip:port/url', 'is_active':True, 'title':'Дверь в подьезд', 'address':'г. Москва, .....', 'longitude':45.12345678, 'latitude':47.12345678, 'record_days':10, 'domophoneid':1, 'sippassword':'Passwd', 'dtmf':1, 'camshot':'url camshot', 'paneltype':1, 'panelip':'192.168.1.1', 'panellogin':'Login', 'panelpasswd':'passwd'}
+
+/bill/api/devices_add/ на входе json нового девайса {device_uuid, device_type, affiliation, owner, url, port, stream, is_active, title, address, longitude, latitude, server_id, record_days, domophoneid, sippassword, dtmf, camshot, paneltype, panelip, panellogin, panelpasswd}
+
+/bill/api/devices_del/ на вход получает device_id удаляемого устройства в формате json - {'device_id':1}, на выходе ""
+
+Примечания по полям:
+
+device_id числовое значение, задается автоматически при создании.
+
+device_uuid uuid устройства, которое потом используется после url медиасервера для поиска онлайн и записей
+
+device_type при создании числовое значение, при просмотре текст: 1 = cam, 2 = mewcam, 3 = lock (точка проходаб замок)
+
+url урл медиасервера, где хранятся записи и онлайн
+
+stream
+
+is_active
+
+title
+
+address
+
+longitude
+
+latitude
+
+record_days
+
+domophoneid
+
+sippassword
+
+dtmf
+
+camshot
+
+paneltype
+
+panelip
+
+panellogin
+
+panelpasswd
+
+/bill/api/rights_list/ на вход получает uid абонента в формате json - {'uid':12345}, на выходе выдает массив [{'device_id':1 ,'device_type':'cam' , 'title': 'Камера на входе']
+
+/bill/api/rights_add/  на вход получает uid абонента и id добавляемого в права устройства в формате json - {'uid':12345', 'device_id':1}, на выходе ""
+
+/bill/api/rights_del/  на вход получает uid абонента и id удаляемого из прав устройства в формате json - {'uid':12345', 'device_id':1}, на выходе ""
+
+
+
+
+
+

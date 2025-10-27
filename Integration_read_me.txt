@@ -55,49 +55,52 @@ def billingList(userphone):
 
 /bill/api/devices_list/ на входе пусто, на выходе json {'device_id':123, 'device_type':'cam', 'url':'vd.sait.ru', 'stream':'rtsp://ip:port/url', 'is_active':True, 'title':'Дверь в подьезд', 'address':'г. Москва, .....', 'longitude':45.12345678, 'latitude':47.12345678, 'record_days':10, 'domophoneid':1, 'sippassword':'Passwd', 'dtmf':1, 'camshot':'url camshot', 'paneltype':1, 'panelip':'192.168.1.1', 'panellogin':'Login', 'panelpasswd':'passwd'}
 
-/bill/api/devices_add/ на входе json нового девайса {device_uuid, device_type, affiliation, owner, url, port, stream, is_active, title, address, longitude, latitude, server_id, record_days, domophoneid, sippassword, dtmf, camshot, paneltype, panelip, panellogin, panelpasswd}
+/bill/api/devices_add/ на входе json нового девайса {'device_uuid':'8ee703fe-5e92-4f6e-a6bb-e194a8825be4', 'device_type':1, 'url':'vd.sait.ru', 'stream':'rtsp://ip:port/url', 'is_active':True, 'title':'Дверь в подьезд', 'address':'г. Москва, .....', 'longitude':45.12345678, 'latitude':47.12345678, 'record_days':10, 'domophoneid':1, 'sippassword':'Passwd', 'dtmf':1, 'camshot':'url camshot', 'paneltype':1, 'panelip':'192.168.1.1', 'panellogin':'Login', 'panelpasswd':'passwd'}, на выходе ""
 
 /bill/api/devices_del/ на вход получает device_id удаляемого устройства в формате json - {'device_id':1}, на выходе ""
 
 Примечания по полям:
 
-device_id числовое значение, задается автоматически при создании.
+device_id - числовое значение, задается автоматически при создании.
 
-device_uuid uuid устройства, которое потом используется после url медиасервера для поиска онлайн и записей
+device_uuid - uuid устройства, которое потом используется после url медиасервера для поиска онлайн и записей (указывается только для камер и домофонов!)
 
-device_type при создании числовое значение, при просмотре текст: 1 = cam, 2 = mewcam, 3 = lock (точка проходаб замок)
+device_type - при создании числовое значение, при просмотре текст: 1 = cam, 2 = mewcam, 3 = lock (точка проходаб замок)
 
-url урл медиасервера, где хранятся записи и онлайн
+url - урл медиасервера, где хранятся записи и онлайн (указывается только для камер и домофонов!)
 
-stream
+stream - урл rtsp, с логином и паролем для получения потока (указывается только для камер и домофонов!)
 
-is_active
+is_active - активно устройство или нет - True
 
-title
+title - строковое описание
 
-address
+address - строка адреса 
 
-longitude
+longitude - координаты (указывается только для камер и домофонов!)
 
-latitude
+latitude - координаты (указывается только для камер и домофонов!)
 
-record_days
+record_days - глубина архива в днях, 0 - если нет архива (указывается только для камер и домофонов!)
 
-domophoneid
+domophoneid - id домофона, он же сиплогин, например, если сиплогин 100001, то id указывается 1  (указывается только для домофона!)
 
-sippassword
+sippassword - сипароль  (указывается только для домофона!)
 
-dtmf
+dtmf - код открытия дтмф  (указывается только для домофона!)
 
-camshot
+camshot - полный урл, с логином и паролем, по которому воможно получение стопкадра (указывается только для камер и домофонов!)
 
-paneltype
+paneltype - тип домофона, 1 - Бевард, 2 - Сокол (указывается только для домофона!)
 
-panelip
+panelip - ip адрес домофона (указывается только для домофона!)
 
-panellogin
+panellogin   логин домофона (указывается только для домофона!)
 
-panelpasswd
+panelpasswd   пароль домофона (указывается только для домофона!)
+
+Особые указания: сложные и/или составные устройства указываются и как камера и как замок. Таким образом, можно использовать как домофоны, так и самим комбинировать точку прохода/проезда с камерой.
+
 
 /bill/api/rights_list/ на вход получает uid абонента в формате json - {'uid':12345}, на выходе выдает массив [{'device_id':1 ,'device_type':'cam' , 'title': 'Камера на входе']
 

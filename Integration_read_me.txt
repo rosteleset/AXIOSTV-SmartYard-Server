@@ -53,7 +53,7 @@ def billingList(userphone):
 
 Методы управления устройствами:
 
-/bill/api/devices_list/ на входе пусто, на выходе json {'device_id':123, 'device_type':'cam', 'url':'vd.sait.ru', 'stream':'rtsp://ip:port/url', 'is_active':True, 'title':'Дверь в подьезд', 'address':'г. Москва, .....', 'longitude':45.12345678, 'latitude':47.12345678, 'record_days':10, 'domophoneid':1, 'sippassword':'Passwd', 'dtmf':1, 'camshot':'url camshot', 'paneltype':1, 'panelip':'192.168.1.1', 'panellogin':'Login', 'panelpasswd':'passwd'}
+/bill/api/devices_list/ на входе пусто, на выходе json с массивом "devices": [{'device_id':123, 'device_type':'cam', 'url':'vd.sait.ru', 'stream':'rtsp://ip:port/url', 'is_active':True, 'title':'Дверь в подьезд', 'address':'г. Москва, .....', 'longitude':45.12345678, 'latitude':47.12345678, 'record_days':10, 'domophoneid':1, 'sippassword':'Passwd', 'dtmf':1, 'camshot':'url camshot', 'paneltype':1, 'panelip':'192.168.1.1', 'panellogin':'Login', 'panelpasswd':'passwd'}, ]
 
 /bill/api/devices_add/ на входе json нового девайса {'device_uuid':'8ee703fe-5e92-4f6e-a6bb-e194a8825be4', 'device_type':1, 'url':'vd.sait.ru', 'stream':'rtsp://ip:port/url', 'is_active':True, 'title':'Дверь в подьезд', 'address':'г. Москва, .....', 'longitude':45.12345678, 'latitude':47.12345678, 'record_days':10, 'domophoneid':1, 'sippassword':'Passwd', 'dtmf':1, 'camshot':'url camshot', 'paneltype':1, 'panelip':'192.168.1.1', 'panellogin':'Login', 'panelpasswd':'passwd'}, на выходе ""
 
@@ -105,6 +105,26 @@ panelpasswd   пароль домофона (указывается только
 Особые указания: 
 1. сложные и/или составные устройства указываются и как камера и как замок. Таким образом, можно использовать как домофоны, так и самим комбинировать точку прохода/проезда (замки, ворота или шлагбаумы с камерой).
 2. Неиспользуемые переменные указываются в запросах как 'None'
+
+
+/bill/api/doors_list/ на входе пусто, на выходе json с массивом "doors": [{"id": 2, "device_id": 2, "cam": 1, "entrance": 1, "icon": "entrance", "name": "Главная дверь", "open": "http://root:Passwd@10.231.254.166:8080/relay/1/open", "open_trait": "PUT"}, ]
+Примечания по полям:
+id - Порядковый идентификатор двери, назначается автоматически
+device_id - Идентификатор замка в Devices, равен device_id там и связанн с ним
+cam - Идентификатор камеры в Devices, равен device_id там и связанн с ним
+entrance - номер подъезда
+icon - Название иконки для этой двери в приложении, может быть "entrance", "wicket", "gate"
+name - Название двери
+open - Полная команда для открытия, например "http://root:Passwd@10.231.254.166:8080/relay/1/open"
+open_trait - Тип команды для открытия, например "PUT", если не указанно, то "GET"
+
+
+/bill/api/doors_add/ на входе json нового девайса {"device_id": 2, "cam": 1, "entrance": 1, "icon": "entrance", "name": "Главная дверь", "open": "http://root:Passwd@10.231.254.166:8080/relay/1/open", "open_trait": "PUT"}, на выходе ""
+
+/bill/api/devices_mod/ на входе json обновляемого девайса {'doors_id':1, "device_id": 2, "cam": 1, "entrance": 1, "icon": "entrance", "name": "Главная дверь", "open": "http://root:Passwd@10.231.254.166:8080/relay/1/open", "open_trait": "PUT"}, на выходе ""
+
+
+/bill/api/devices_del/ на вход получает id удаляемого устройства в формате json - {'doors_id':1}, на выходе ""
 
 
 Методы управления правами на устройства:

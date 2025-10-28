@@ -57,13 +57,16 @@ def billingList(userphone):
 
 /bill/api/devices_add/ на входе json нового девайса {'device_uuid':'8ee703fe-5e92-4f6e-a6bb-e194a8825be4', 'device_type':1, 'url':'vd.sait.ru', 'stream':'rtsp://ip:port/url', 'is_active':True, 'title':'Дверь в подьезд', 'address':'г. Москва, .....', 'longitude':45.12345678, 'latitude':47.12345678, 'record_days':10, 'domophoneid':1, 'sippassword':'Passwd', 'dtmf':1, 'camshot':'url camshot', 'paneltype':1, 'panelip':'192.168.1.1', 'panellogin':'Login', 'panelpasswd':'passwd'}, на выходе ""
 
+/bill/api/devices_mod/ на входе json обновляемого девайса {'device_id':123, 'device_type':1, 'url':'vd.sait.ru', 'stream':'rtsp://ip:port/url', 'is_active':True, 'title':'Дверь в подьезд', 'address':'г. Москва, .....', 'longitude':45.12345678, 'latitude':47.12345678, 'record_days':10, 'domophoneid':1, 'sippassword':'Passwd', 'dtmf':1, 'camshot':'url camshot', 'paneltype':1, 'panelip':'192.168.1.1', 'panellogin':'Login', 'panelpasswd':'passwd'}, на выходе ""
+
+
 /bill/api/devices_del/ на вход получает device_id удаляемого устройства в формате json - {'device_id':1}, на выходе ""
 
 Примечания по полям:
 
 device_id - числовое значение, задается автоматически при создании.
 
-device_uuid - uuid устройства, которое потом используется после url медиасервера для поиска онлайн и записей (указывается только для камер и домофонов!)
+device_uuid - uuid устройства, уникальное значение, которое потом используется после url медиасервера для поиска онлайн и записей (указывается только для камер и домофонов!)
 
 device_type - при создании числовое значение, при просмотре текст: 1 = cam, 2 = mewcam, 3 = lock (точка проходаб замок)
 
@@ -83,7 +86,7 @@ latitude - координаты (указывается только для ка
 
 record_days - глубина архива в днях, 0 - если нет архива (указывается только для камер и домофонов!)
 
-domophoneid - id домофона, он же сиплогин, например, если сиплогин 100001, то id указывается 1  (указывается только для домофона!)
+domophoneid - id домофона, уникальное значение, он же сиплогин, например, если сиплогин 100001, то id указывается 1  (указывается только для домофона!)
 
 sippassword - сипароль  (указывается только для домофона!)
 

@@ -121,10 +121,10 @@ open_trait - Тип команды для открытия, например "PU
 
 /bill/api/doors_add/ на входе json нового девайса {"device_id": 2, "cam": 1, "entrance": 1, "icon": "entrance", "name": "Главная дверь", "open": "http://root:Passwd@10.231.254.166:8080/relay/1/open", "open_trait": "PUT"}, на выходе ""
 
-/bill/api/devices_mod/ на входе json обновляемого девайса {'doors_id':1, "device_id": 2, "cam": 1, "entrance": 1, "icon": "entrance", "name": "Главная дверь", "open": "http://root:Passwd@10.231.254.166:8080/relay/1/open", "open_trait": "PUT"}, на выходе ""
+/bill/api/doors_mod/ на входе json обновляемого девайса {'doors_id':1, "device_id": 2, "cam": 1, "entrance": 1, "icon": "entrance", "name": "Главная дверь", "open": "http://root:Passwd@10.231.254.166:8080/relay/1/open", "open_trait": "PUT"}, на выходе ""
 
 
-/bill/api/devices_del/ на вход получает id удаляемого устройства в формате json - {'doors_id':1}, на выходе ""
+/bill/api/doors_del/ на вход получает id удаляемого устройства в формате json - {'doors_id':1}, на выходе ""
 
 
 Методы управления правами на устройства:

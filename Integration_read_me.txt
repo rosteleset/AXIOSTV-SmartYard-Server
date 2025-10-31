@@ -110,8 +110,8 @@ panelpasswd   пароль домофона (указывается только
 /bill/api/doors_list/ на входе пусто, на выходе json с массивом "doors": [{"id": 2, "device_id": 2, "cam": 1, "entrance": 1, "icon": "entrance", "name": "Главная дверь", "open": "http://root:Passwd@10.231.254.166:8080/relay/1/open", "open_trait": "PUT"}, ]
 Примечания по полям:
 id - Порядковый идентификатор двери, назначается автоматически
-device_id - Идентификатор замка в Devices, равен device_id там и связанн с ним
-cam - Идентификатор камеры в Devices, равен device_id там и связанн с ним
+device_id - Идентификатор замка в Devices, равен device_id там и связанн с ним, при этом device_type в devices у этого устройства обязательно = 3
+cam - Идентификатор камеры в Devices, равен device_id там и связанн с ним, при этом device_type в devices у этого устройства обязательно = 1|2
 entrance - номер подъезда
 icon - Название иконки для этой двери в приложении, может быть "entrance", "wicket", "gate"
 name - Название двери

@@ -19,26 +19,6 @@ else:
     print('not loaded .env file')
     exit()
 
-DATABASE_URL = "postgresql+asyncpg://" + os.getenv('PG_HCS_USER') + ":" + os.getenv('PG_HCS_PASS') + "@" + os.getenv("PG_HCS_HOST") + ":5432/" + os.getenv('PG_HCS_DBNAME')
-engine = create_async_engine(DATABASE_URL, echo=True, future=True, poolclass=NullPool)
-async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
-
-def async_session_generator():
-    return sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
-
-@asynccontextmanager
-async def get_session():
-    try:
-        async_session = async_session_generator()
-        async with async_session() as session:
-            yield session
-    except:
-        await session.rollback()
-        raise
-    finally:
-        await session.close()
-
-
 database_path = "postgresql://" + os.getenv('PG_USER') + ":" + os.getenv('PG_PASS') + "@" + os.getenv("PG_HOST") + ":5432/" + os.getenv('PG_DBNAME')
 
 db = SQLAlchemy()
@@ -67,7 +47,7 @@ class Temps(db.Model):
 class Settings(db.Model):
     __tablename__ = 'settings'
 
-    uid= db.Column(db.BigInteger, primary_key=True)
+    uid= db.Column(db.Integer, primary_key=True)
     intercom = db.Column(db.Boolean, default=True)
     asterisk = db.Column(db.Boolean, default=True)
     w_rabbit = db.Column(db.Boolean, default=False)
@@ -99,7 +79,7 @@ class Users(db.Model):
     patronymic = db.Column(db.String(24))
     email = db.Column(db.String(60))
     videotoken = db.Column(db.String(32))
-    uid= db.Column(db.BigInteger)
+    uid= db.Column(db.Integer)
     vttime = db.Column(db.DateTime(timezone=False))
     strims = db.Column(db.ARRAY(String))
     pushtoken = db.Column(db.Text)
@@ -138,7 +118,7 @@ class Records(db.Model):
     __tablename__ = 'records'
 
     id = db.Column(db.Integer, nullable=False, autoincrement=True, primary_key=True)
-    uid = db.Column(db.BigInteger)
+    uid = db.Column(db.Integer)
     url = db.Column(db.Text, index=True, unique=True )
     fileurl = db.Column(db.Text, index=True, unique=True)
     rtime = db.Column(db.DateTime(timezone=False), server_default=func.current_timestamp()) 
@@ -202,11 +182,12 @@ class Devices(db.Model):
     is_active = db.Column(db.Boolean, default=False, nullable=False) # Включена ли камера
     title = db.Column(db.String(64), nullable=True) # Описание, видно в МП
     address = db.Column(db.String(110), nullable=True) # Адрес девайса, обязательное поле, по нему идет поиск устройств
-    longitude = db.Column(db.Numeric(12,9), nullable=True) # Географические координаты для отображения в МП, обязательное поле
     latitude = db.Column(db.Numeric(12,9), nullable=True) # Географические координаты для отображения в МП, обязательное поле
+    longitude = db.Column(db.Numeric(12,9), nullable=True) # Географические координаты для отображения в МП, обязательное поле
     server_id = db.Column(db.Integer, nullable=True) # ID видеосервера, не обязательное поле
     record_days = db.Column(db.Integer, nullable=True) # ID тарифа, не обязательное поле
     domophoneid = db.Column(db.Integer, nullable=True) # Логин SIP. Внимание, на панеле эта цифра + 100000
+    monitorid = db.Column(db.Integer, nullable=True) # Логин SIP. Внимание, на мониторе эта цифра + 4000000000
     sippassword = db.Column(db.Text, nullable=True) # Gfhjkm ЫШЗ
     dtmf = db.Column(db.Integer, nullable=True) # Код открытия
     camshot = db.Column(db.Text, nullable=True) # УРЛ получения стоп кадра с камеры
@@ -214,8 +195,13 @@ class Devices(db.Model):
     panelip = db.Column(INET(), nullable=True) # IP адрес домофона
     panellogin = db.Column(db.Text, nullable=True) # Логин консоли домофона
     panelpasswd = db.Column(db.Text, nullable=True) # Пароль консоли домофона
+    onvifip = db.Column(INET(), nullable=True) # IP адрес onvif
+    onvifport = db.Column(db.Integer, nullable=True) # Порт onvif
+    onviflogin = db.Column(db.Text, nullable=True) # Логин onvif
+    onvifpasswd = db.Column(db.Text, nullable=True) # Пароль onvif
+    onviffilter = db.Column(db.Integer, default=0) # Таи фильтра onvif
 
-    def __init__(self, device_id, device_uuid, device_mac, device_type, affiliation, owner, url, port, stream, is_active, title, address, longitude, latitude, server_id, record_days, domophoneid, sippassword, dtmf, camshot, paneltype, panelip, panellogin, panelpasswd):
+    def __init__(self, device_id, device_uuid, device_mac, device_type, affiliation, owner, url, port, stream, is_active, title, address, latitude, longitude, server_id, record_days, domophoneid, monitorid, sippassword, dtmf, camshot, paneltype, panelip, panellogin, panelpasswd, onvifip, onvifport, onviflogin, onvifpasswd, onviffilter):
         self.device_id = device_id
         self.device_uuid = device_uuid
         self.device_mac = device_mac
@@ -228,11 +214,12 @@ class Devices(db.Model):
         self.is_active = is_active
         self.title = title
         self.address = address
-        self.longitude = longitude
         self.latitude = latitude
+        self.longitude = longitude
+        self.server_id = server_id
         self.record_days = record_days
-        self.tariff_id = tariff_id
         self.domophoneid = domophoneid
+        self.monitorid = monitorid
         self.sippassword = sippassword
         self.dtmf = dtmf
         self.camshot = camshot
@@ -240,6 +227,11 @@ class Devices(db.Model):
         self.panelip = panelip
         self.panellogin = panellogin
         self.panelpasswd = panelpasswd
+        self.onvifip = onvifip
+        self.onvifport = onvifport
+        self.onviflogin = onviflogin
+        self.onvifpasswd = onvifpasswd
+        self.onviffilter = onviffilter
 
     def __repr__(self):
         return f""
@@ -247,7 +239,7 @@ class Devices(db.Model):
 class Rights(db.Model):
     __tablename__ = 'rights'
 
-    uid = db.Column(db.BigInteger, nullable=False, primary_key=True)
+    uid = db.Column(db.Integer, nullable=False, primary_key=True)
     uid_right = db.Column(db.ARRAY(Integer), nullable=True)
 
     def __init__(self, uid, uid_right):
@@ -262,10 +254,8 @@ class Doors(db.Model):
 
     id = db.Column(db.Integer, nullable=False, autoincrement=True, primary_key=True)
     open = db.Column(db.String(64), nullable=False) # УРЛ открытия
-    device_id = db.Column(db.Integer, ForeignKey('devices.device_id', ondelete='CASCADE'), nullable=False) # ID в талице devuces как замка
-    cam = db.Column(db.Integer, ForeignKey('devices.device_id', ondelete='CASCADE'), nullable=False) # ID в талице devuces как камеры
-#    device_id = db.Column(db.Integer, nullable=False) # ID в талице devuces как замка
-#    cam = db.Column(db.Integer, nullable=False) # ID в талице devuces как камеры
+    device_id = db.Column(db.Integer, ForeignKey('devices.id', ondelete='CASCADE'), nullable=False) # ID в талице devuces как замка
+    cam = db.Column(db.Integer, ForeignKey('devices.id', ondelete='CASCADE'), nullable=False) # ID в талице devuces как камеры
     icon = db.Column(db.String(14), nullable=False) # Иконка в МП
     entrance = db.Column(db.Integer, nullable=False) # Подъезд, не обязательное поле
     name = db.Column(db.Text, nullable=False) # Название
@@ -320,38 +310,3 @@ class Upgrade(db.Model):
 
     def __repr__(self):
         return f""
-
-Base = declarative_base()
-
-class Appeals(Base):
-    __tablename__ = "appeals"
-    appealUuid = Column(UUID(as_uuid=True), primary_key=True, index=True, default=uuid.uuid4)
-    createdUtc = Column(DateTime(timezone=False), server_default=func.timezone('UTC', func.current_timestamp(0)))
-    phone = Column(BigInteger, index=True)
-    uid = Column(Integer, index=True)
-    addressUuid = Column(BigInteger, index=True)
-    address = Column(Text, index=True)
-    createdDoc = Column(Text)
-    createdSound = Column(Text)
-    appealId = Column(BigInteger, index=True)
-    companyId = Column(Integer, index=True)
-    parentAppeal = Column(UUID(as_uuid=True), index=True)
-    category = Column(Integer, index=True)
-    description = Column(Text)
-    patternDisc = Column(Text)
-    status = Column(Integer, index=True)
-    executorId = Column(Integer, index=True)
-    statusDescription = Column(ARRAY(JSONB))
-    workerDescription = Column(ARRAY(JSONB))
-
-class Categorys(Base):
-    __tablename__ = "categorys"
-    categoryId = Column(Integer, primary_key=True, index=True)
-    categoryName = Column(String, index=True)
-    companyId = Column(Integer, index=True)
-
-class Statuss(Base):
-    __tablename__ = "statuss"
-    statusId = Column(Integer, primary_key=True, index=True)
-    statusName = Column(String, index=True)
-    companyId = Column(Integer, index=True)

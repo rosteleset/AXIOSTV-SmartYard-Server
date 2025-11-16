@@ -39,15 +39,11 @@ def uidFrom(phone):
             uid.append(key)
     return uid
 
-def camsActiv(uid):
-    row = {}
-    try:
-        row['cams_open'] = uid_phones[int(uid)]['cams_open']
-        row['cams_paid'] = uid_phones[int(uid)]['cams_paid']
-    except:
-        row['cams_open'] = False
-        row['cams_paid'] = False
-    return row
+def isActiv(uid, deviceIds):
+    rows = {}
+    for deviceId in deviceIds:
+        rows[deviceId] = 2
+    return rows
 
 def addressList(userphone):
     uids = uidFrom(userphone)

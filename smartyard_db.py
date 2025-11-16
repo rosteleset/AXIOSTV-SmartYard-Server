@@ -195,13 +195,14 @@ class Devices(db.Model):
     panelip = db.Column(INET(), nullable=True) # IP адрес домофона
     panellogin = db.Column(db.Text, nullable=True) # Логин консоли домофона
     panelpasswd = db.Column(db.Text, nullable=True) # Пароль консоли домофона
+    second_door = db.Column(db.Integer, nullable=True)
     onvifip = db.Column(INET(), nullable=True) # IP адрес onvif
     onvifport = db.Column(db.Integer, nullable=True) # Порт onvif
     onviflogin = db.Column(db.Text, nullable=True) # Логин onvif
     onvifpasswd = db.Column(db.Text, nullable=True) # Пароль onvif
     onviffilter = db.Column(db.Integer, default=0) # Таи фильтра onvif
 
-    def __init__(self, device_id, device_uuid, device_mac, device_type, affiliation, owner, url, port, stream, is_active, title, address, latitude, longitude, server_id, record_days, domophoneid, monitorid, sippassword, dtmf, camshot, paneltype, panelip, panellogin, panelpasswd, onvifip, onvifport, onviflogin, onvifpasswd, onviffilter):
+    def __init__(self, device_id, device_uuid, device_mac, device_type, affiliation, owner, url, port, stream, is_active, title, address, latitude, longitude, server_id, record_days, domophoneid, monitorid, sippassword, dtmf, camshot, paneltype, panelip, panellogin, panelpasswd, second_door, onvifip, onvifport, onviflogin, onvifpasswd, onviffilter):
         self.device_id = device_id
         self.device_uuid = device_uuid
         self.device_mac = device_mac
@@ -227,6 +228,7 @@ class Devices(db.Model):
         self.panelip = panelip
         self.panellogin = panellogin
         self.panelpasswd = panelpasswd
+        self.second_door = second_door
         self.onvifip = onvifip
         self.onvifport = onvifport
         self.onviflogin = onviflogin

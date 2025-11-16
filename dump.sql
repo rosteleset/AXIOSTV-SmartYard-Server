@@ -83,6 +83,7 @@ CREATE TABLE public.devices (
     server_id integer,
     tariff_id integer,
     domophoneid integer,
+    monitorid integer,
     sippassword text,
     dtmf integer,
     camshot text,
@@ -485,6 +486,13 @@ ALTER TABLE ONLY public.devices
 
 ALTER TABLE ONLY public.devices
     ADD CONSTRAINT devices_domophoneid_key UNIQUE (domophoneid);
+
+--
+-- Name: devices devices_monitorid_key; Type: CONSTRAINT; Schema: public; Owner: smartyard
+--
+
+ALTER TABLE ONLY public.devices
+    ADD CONSTRAINT devices_monitorid_key UNIQUE (monitorid);
 
 
 --

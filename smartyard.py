@@ -49,7 +49,6 @@ else:
     print('not loaded .env file')
     exit()
 
-#cred = credentials.Certificate("/opt/smartyard/smartyard-25ea6-firebase-adminsdk-ps2zk-db7eef3ab3.json")
 cred = credentials.Certificate(os.getenv('GOOGLEFSM'))
 default_app = firebase_admin.initialize_app(cred)
 
@@ -574,9 +573,7 @@ async def address_access():
         response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
         abort (422)
     guestPhone = request_data['guestPhone']
-    if 'flatId' in request_data:
-        uid = int(request_data['flatId'])
-    elif 'houseId' in request_data:
+    if 'houseId' in request_data:
         uid = int(request_data['houseId'])
     else:
         response = app.response_class(status=404, mimetype='application/json')
@@ -647,7 +644,7 @@ async def address_getSettingsList():
     data = []
     addList = addressList(phone)
     if len(addList) == 0:
-        data.append({'address':'Здесь будет Ваш адрес','services':[],'hasPlog':'f','hasGates':'f','contractOwner':'f','houseId':'0','flatId':'0'})
+        data.append({'address':'Здесь будет Ваш адрес','services':[],'hasPlog':'f','hasGates':'f','contractOwner':'f','houseId':'0'})
     else:
         for itemd in addList:
             uid = itemd['uid']
@@ -655,7 +652,7 @@ async def address_getSettingsList():
             contractName = "Договор " + clientId
             houseId = str(itemd['uid'])
             address = itemd['address']
-            data.append({'address':address,'services':['internet','iptv','ctv','phone','cctv','domophone'],'hasPlog':'t','hasGates':'t','contractOwner':'t','clientId':clientId,'contractName':contractName,'houseId':houseId,'flatId':houseId, 'flatNumber':'0'})
+            data.append({'address':address,'services':['internet','iptv','ctv','phone','cctv','domophone'],'hasPlog':'t','hasGates':'t','contractOwner':'t','clientId':clientId,'contractName':contractName,'houseId':houseId, 'flatNumber':'0'})
             exists = db.session.query(db.exists().where(Settings.uid==uid)).scalar()
             db.session.remove()
             if not exists:
@@ -672,9 +669,7 @@ async def address_intercom():
     global response
     access_verification(request.headers)
     request_data = json_verification(request)
-    if 'flatId' in request_data:
-        uid = int(request_data['flatId'])
-    elif 'houseId' in request_data:
+    if 'houseId' in request_data:
         uid = int(request_data['houseId'])
     else:
         response = app.response_class(status=404, mimetype='application/json')
@@ -794,9 +789,7 @@ async def address_plog():
     global response
     access_verification(request.headers)
     request_data = json_verification(request)
-    if 'flatId' in request_data:
-        uid = int(request_data['flatId'])
-    elif 'houseId' in request_data:
+    if 'houseId' in request_data:
         uid = int(request_data['houseId'])
     else:
         response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
@@ -840,9 +833,7 @@ async def address_plogDays():
     global response
     access_verification(request.headers)
     request_data = json_verification(request)
-    if 'flatId' in request_data:
-        uid = int(request_data['flatId'])
-    elif 'houseId' in request_data:
+    if 'houseId' in request_data:
         uid = int(request_data['houseId'])
     else:
         response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
@@ -905,9 +896,7 @@ async def address_resend():
     global response
     access_verification(request.headers)
     request_data = json_verification(request)
-    if 'flatId' in request_data:
-        uid = int(request_data['flatId'])
-    elif 'houseId' in request_data:
+    if 'houseId' in request_data:
         uid = int(request_data['houseId'])
     else:
         response = app.response_class(status=404, mimetype='application/json')
@@ -919,9 +908,7 @@ async def address_resetCode():
     global response
     access_verification(request.headers)
     request_data = json_verification(request)
-    if 'flatId' in request_data:
-        uid = int(request_data['flatId'])
-    elif 'houseId' in request_data:
+    if 'houseId' in request_data:
         uid = int(request_data['houseId'])
     else:
         response = app.response_class(status=404, mimetype='application/json')
@@ -2251,8 +2238,8 @@ async def extensions_push():
         platform = 'ios'
     else:
         platform = 'android'
-    data = {'server':shortserverurl,'port':'5401','transport':'tcp','extension':str(req['extension']),'pass':req['hash'],'dtmf':str(req['dtmf']),'image':image,'live':live,'webRtcUrl':webRtcUrl,'noVideoSip':noVideoSip,'timestamp':str(int(datetime.datetime.now().timestamp())),'ttl':'30','callerId':req['callerId'],'platform':platform,'houseId':str(req['uid']),'flatId':str(req['uid']),'flatNumber':str(req['flatNumber']),'stun': '','stun_transport':'udp','stunTransport':'udp','type':'call'}
-    data_old = {'server':shortserverurl,'port':'5401','transport':'tcp','extension':str(req['extension']),'pass':req['hash'],'dtmf':str(req['dtmf']),'image':image,'live':live,'timestamp':str(int(datetime.datetime.now().timestamp())),'ttl':'30','callerId':req['callerId'],'platform':platform,'flatId':str(req['uid']),'flatNumber':str(req['flatNumber']),'stun': 'stun:37.235.209.140:3478','stun_transport':'udp','stunTransport':'udp',}
+    data = {'server':shortserverurl,'port':'5401','transport':'tcp','extension':str(req['extension']),'pass':req['hash'],'dtmf':str(req['dtmf']),'image':image,'live':live,'webRtcUrl':webRtcUrl,'noVideoSip':noVideoSip,'timestamp':str(int(datetime.datetime.now().timestamp())),'ttl':'30','callerId':req['callerId'],'platform':platform,'houseId':str(req['uid']),'flatNumber':str(req['flatNumber']),'stun': '','stun_transport':'udp','stunTransport':'udp','type':'call'}
+    data_old = {'server':shortserverurl,'port':'5401','transport':'tcp','extension':str(req['extension']),'pass':req['hash'],'dtmf':str(req['dtmf']),'image':image,'live':live,'timestamp':str(int(datetime.datetime.now().timestamp())),'ttl':'30','callerId':req['callerId'],'platform':platform,'flatNumber':str(req['flatNumber']),'stun': 'stun:37.235.209.140:3478','stun_transport':'udp','stunTransport':'udp',}
     if req['platform'] == 0:
         message = messaging.Message(android=messaging.AndroidConfig(ttl=datetime.timedelta(seconds=30), priority='high',), data=data, token=registration_token,)
         response = messaging.send(message)

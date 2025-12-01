@@ -36,14 +36,14 @@ yum install -y python3-virtualenv postgresql-server nginx supervisor asterisk re
 
 rpm -qa | grep python3
 
-python3-libs-3.10.10-17.el7.x86_64
-python3-pip-wheel-22.3.1-2.el7.noarch
-python3-virtualenv-20.13.4-500.el7.noarch
-python3-devel-3.10.10-17.el7.x86_64
-python3-setuptools-67.6.0-3.el7.noarch
-python3-3.10.10-17.el7.x86_64
-python3-pip-22.3.1-2.el7.noarch
-python3-setuptools-wheel-67.6.0-3.el7.noarch
+python3-libs-3.10.10-17.el9.x86_64
+python3-pip-wheel-22.3.1-2.el9.noarch
+python3-virtualenv-20.13.4-500.el9.noarch
+python3-devel-3.10.10-17.el9.x86_64
+python3-setuptools-67.6.0-3.el9.noarch
+python3-3.10.10-17.el9.x86_64
+python3-pip-22.3.1-2.el9.noarch
+python3-setuptools-wheel-67.6.0-3.el9.noarch
 
 
 #Dabian/Ubuntu:

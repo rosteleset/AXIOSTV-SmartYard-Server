@@ -185,7 +185,8 @@ class Devices(db.Model):
     latitude = db.Column(db.Numeric(12,9), nullable=True) # Географические координаты для отображения в МП, обязательное поле
     longitude = db.Column(db.Numeric(12,9), nullable=True) # Географические координаты для отображения в МП, обязательное поле
     server_id = db.Column(db.Integer, nullable=True) # ID видеосервера, не обязательное поле
-    record_days = db.Column(db.Integer, nullable=True) # ID тарифа, не обязательное поле
+    record_days = db.Column(db.Integer, nullable=True) # Длина архива, не обязательное поле
+    record_path = db.Column(db.Text, nullable=True) # Путь архива, не обязательное поле
     domophoneid = db.Column(db.Integer, nullable=True) # Логин SIP. Внимание, на панеле эта цифра + 100000
     monitorid = db.Column(db.Integer, nullable=True) # Логин SIP. Внимание, на мониторе эта цифра + 4000000000
     sippassword = db.Column(db.Text, nullable=True) # Gfhjkm ЫШЗ
@@ -202,7 +203,7 @@ class Devices(db.Model):
     onvifpasswd = db.Column(db.Text, nullable=True) # Пароль onvif
     onviffilter = db.Column(db.Integer, default=0) # Таи фильтра onvif
 
-    def __init__(self, device_id, device_uuid, device_mac, device_type, affiliation, owner, url, port, stream, is_active, title, address, latitude, longitude, server_id, record_days, domophoneid, monitorid, sippassword, dtmf, camshot, paneltype, panelip, panellogin, panelpasswd, second_door, onvifip, onvifport, onviflogin, onvifpasswd, onviffilter):
+    def __init__(self, device_id, device_uuid, device_mac, device_type, affiliation, owner, url, port, stream, is_active, title, address, latitude, longitude, server_id, record_days, record_path, domophoneid, monitorid, sippassword, dtmf, camshot, paneltype, panelip, panellogin, panelpasswd, second_door, onvifip, onvifport, onviflogin, onvifpasswd, onviffilter):
         self.device_id = device_id
         self.device_uuid = device_uuid
         self.device_mac = device_mac
@@ -219,6 +220,7 @@ class Devices(db.Model):
         self.longitude = longitude
         self.server_id = server_id
         self.record_days = record_days
+        self.record_path = record_path
         self.domophoneid = domophoneid
         self.monitorid = monitorid
         self.sippassword = sippassword
@@ -262,7 +264,9 @@ class Doors(db.Model):
     entrance = db.Column(db.Integer, nullable=False) # Подъезд, не обязательное поле
     name = db.Column(db.Text, nullable=False) # Название
     open_trait = db.Column(db.Text, nullable=True) # тип запроса на открытие (GET, PUT, POST)
-    def __init__(self, id, open, device_id, cam, icon, entrance, name, open_trait):
+    rubetek_uuid = db.Column(UUID(as_uuid=True), nullable=True) # Рубитек UUID, не обязательное поле
+    rubetek_ext = db.Column(db.Integer, nullable=True) # Признак внешнего устройства Рубитек, не обязательное поле
+    def __init__(self, id, open, device_id, cam, icon, entrance, name, open_trait, rubetek_uuid, rubetek_ext):
         self.id = id
         self.open = open
         self.device_id = device_id
@@ -271,6 +275,8 @@ class Doors(db.Model):
         self.entrance = entrance
         self.name = name
         self.open_trait = open_trait
+        self.rubetek_uuid = rubetek_uuid
+        self.rubetek_ext = rubetek_ext
 
     def __repr__(self):
         return f""

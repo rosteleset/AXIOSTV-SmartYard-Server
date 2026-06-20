@@ -11,6 +11,7 @@ from flask import Flask, jsonify, request, make_response, abort, send_file
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_httpauth import HTTPBasicAuth
+from flask_executor import Executor
 from werkzeug.security import generate_password_hash, check_password_hash
 from sqlalchemy import Column, Integer, String, update, or_, any_
 from sqlalchemy.dialects.postgresql import UUID, TIMESTAMP
@@ -28,14 +29,18 @@ from receiptGenerator import create_receipt
 from keyManager import keyAdd, keyDell
 from getPanel import getPanel
 from smser import smssend
-from smartyard_db import Temps, Types, Settings, Users, Records, Devices, Rights, Doors, Invoices, Keys, Appeals, Categorys, Statuss, create_db_connection, db, async_session, get_session
-from smartyard_bill import addressList, billingList, isActiv, paySuccess, uidFromUidsAndFlat, userPhones, flatFromUid, addressFromUid, fullAddressFromUid, newInvoice, getDetail, getReceipt
+from smartyard_db import Temps, Types, Settings, Users, Records, Devices, Rights, Doors, Invoices, Keys, Nodes, Rooms, Items, Appeals, Categorys, Statuss, create_db_connection, db, async_session, get_session
+from smartyard_bill import addressList, billingList, isActiv, paySuccess, uidFromUidsAndFlat, userPhones, uidList, flatFromUid, addressFromUid, fullAddressFromUid, newInvoice, getDetail, getReceipt, uidFromCarNumber, uidConfirmPassport, addMyPhone, getRestoreInfo, getRestorePhone, getRestorePasswd
 from smartyard_click import getPlogs, getPlogsIds, getPlogDays, getPlogDaysIds, getPlogDaysEvents, getPlogDaysEventsIds, putEvent, getCamPlogs, getCamPlogDays, getCamPlogDaysEvents
+from smartyard_mqtt import GoMqttRpcClient
+from sendEmail import send_email
 import firebase_admin
 from firebase_admin import auth, credentials, messaging
 from harmony_send_message import harmony_send_message
 import redis
 r = redis.Redis()
+
+mqtt_rpc = GoMqttRpcClient()
 
 try:
     from io import BytesIO
@@ -49,15 +54,17 @@ else:
     print('not loaded .env file')
     exit()
 
+#cred = credentials.Certificate("/opt/smartyard/smartyard-25ea6-firebase-adminsdk-ps2zk-db7eef3ab3.json")
 cred = credentials.Certificate(os.getenv('GOOGLEFSM'))
 default_app = firebase_admin.initialize_app(cred)
 
 app = Flask(__name__)
+executor = Executor(app)
 create_db_connection(app)
 auth = HTTPBasicAuth()
 
 users = {
-    "z5rweb": generate_password_hash("Password"),
+    "z5rweb": generate_password_hash("Passwd"),
 }
 
 @auth.verify_password
@@ -80,6 +87,7 @@ videoarchivedir = os.getenv('VIDEO_ARСHIVE_DIR')
 appealdocdir = os.getenv('APPEALDOC_DIR')
 serverurl = os.getenv('SERVER_URL')
 shortserverurl = serverurl.split('//')[1]
+tp_email = os.getenv('TP_EMAIL')
 
 sber_user = os.getenv('BANCK_USERNAME')
 sber_passwd = os.getenv('BANCK_PASSWD')
@@ -89,12 +97,17 @@ ukassa_passwd = os.getenv('UKASSA_PASSWD')
 testuser = os.getenv('TEST_USER')
 testpass = os.getenv('TEST_PASS')
 
-android_upgrade = 64
-android_force_ugrade = 63
-harmony_upgrade = 64
-harmony_force_ugrade = 63
-ios_upgrade = 28
-ios_force_ugrade = 27
+permit_addmyphone = os.getenv('PERMIT_ADDMYPHONE')
+permit_showrestorephoned = os.getenv('PERMIT_SHOWRESTOREPHONE')
+permit_restorepasswd = os.getenv('PERMIT_RESTOREPASSWD')
+main_screen_address = os.getenv('MAIN_SCREEN_ADDRESS')
+
+android_upgrade = 77
+android_force_ugrade = 76
+harmony_upgrade = 77
+harmony_force_ugrade = 76
+ios_upgrade = 50
+ios_force_ugrade = 40
 
 welcome = False
 hasCctv = True
@@ -115,14 +128,16 @@ doorsDemo = [{'domophoneId':'0', 'doorId':0,'entrance':'1','icon':'entrance','na
 
 def access_verification(key):
     global response
-    if not key.get('Authorization'):
+    if not key.get('Authorization') or not UUID(key.get('Authorization')[7:]):
+        time.sleep(10)
         response = {'code':422,'name':'Отсутствует токен авторизации','message':'Отсутствует токен авторизации'}
         abort (422)
     try:
         phone = db.session.query(Users.userphone).filter_by(uuid=key.get('Authorization')[7:]).first()[0]
         db.session.remove()
         return phone
-    except TypeError:
+    except:
+        time.sleep(10)
         response = {'code':401,'name':'Не авторизован','message':'Не авторизован'}
         abort (401)
 
@@ -165,6 +180,50 @@ def searchPanel(uid):
         except:
             pass
     return panel
+
+def sendPush(uid, data):
+    data["houseId"] = str(uid)
+    title = data["title"]
+    phones = userPhones(uid)
+    for phone in phones:
+        row = [r._asdict() for r in db.session.query(Users.pushtoken, Users.platform).filter(Users.userphone == int(phone)).all()]
+        db.session.remove()
+        try:
+            registration_token = row[0]['pushtoken']
+            if row[0]['platform'] == 'android':
+                message = messaging.Message(android=messaging.AndroidConfig(ttl=datetime.timedelta(seconds=60), priority='high',), data=data, token=registration_token,)
+                executor.submit(messaging.send,message)
+            if row[0]['platform'] == 'ios':
+                message = messaging.Message(apns=messaging.APNSConfig(headers={'apns-priority':'10', 'apns-expiration':str(int(datetime.datetime.now().timestamp()) + 60)},payload=messaging.APNSPayload(aps=messaging.Aps(alert=messaging.ApsAlert(title=title,body='',),category="INCOMING_DOOR_CALL",mutable_content=True,badge=1,sound="default",),),), data=data, token=registration_token,)
+                executor.submit(messaging.send,message)
+            if row[0]['platform'] == 'harmony':
+                executor.submit(harmony_send_message,data,registration_token)
+        except:
+            pass
+    return
+
+def userUpdate(userPhone, userUuid):
+    uids = uidList(userPhone)
+    rows = db.session.execute(text("SELECT r.uid, ARRAY_AGG(d.device_id ORDER BY d.device_id) AS uid_right, r.ble_right FROM rights r JOIN devices d ON d.paneltype = 3 AND d.device_id = ANY (r.uid_right) WHERE r.uid = ANY (:uids) GROUP BY r.uid, r.ble_right"), {"uids": uids}).mappings().all()
+    db.session.remove()
+    for row in rows:
+        isactiv = isActiv(row['uid'], row['uid_right'])
+        flat = flatFromUid(row['uid'])
+        if 2 in isactiv.values():
+            b = userUuid.bytes  # 16 байт
+            picked = bytes([b[5], b[4], b[3]])  # 36 4F 89
+            rfid = picked.hex().upper().rjust(14, "0")
+            if not rfid in row['ble_right']:
+                db.session.query(Rights).filter_by(uid=row['uid']).update({Rights.ble_right: Rights.ble_right + rfid}, synchronize_session=False)
+                db.session.commit()
+                db.session.remove()
+            for device_id in row['uid_right']:
+                panelData = [r._asdict() for r in db.session.query(Devices.panelip, Devices.panellogin, Devices.panelpasswd).filter((Devices.device_id == device_id) & (Devices.flats_range.contains(flat))).all()]
+                db.session.remove()
+                if panelData:
+                    panelData = panelData[0]
+                    result = keyAdd(rfid, flat, 3, panelData['panelip'], panelData['panellogin'], panelData['panelpasswd'])
+    return
 
 @app.route('/bill/api/auth/', methods=['POST'])
 def apiauth():
@@ -573,7 +632,9 @@ async def address_access():
         response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
         abort (422)
     guestPhone = request_data['guestPhone']
-    if 'houseId' in request_data:
+    if 'flatId' in request_data:
+        uid = int(request_data['flatId'])
+    elif 'houseId' in request_data:
         uid = int(request_data['houseId'])
     else:
         response = app.response_class(status=404, mimetype='application/json')
@@ -594,8 +655,11 @@ async def address_access():
 
 @app.route('/api/address/getAddressList', methods=['POST'])
 async def address_getAddressList():
-    global response
+    global response, hasHcs, hasSh
     phone = access_verification(request.headers)
+    if phone == int(testuser):
+        hasHcs = True
+        hasSh = True
     data = []
     addList = addressList(phone)
     if len(addList) == 0:
@@ -644,7 +708,7 @@ async def address_getSettingsList():
     data = []
     addList = addressList(phone)
     if len(addList) == 0:
-        data.append({'address':'Здесь будет Ваш адрес','services':[],'hasPlog':'f','hasGates':'f','contractOwner':'f','houseId':'0'})
+        data.append({'address':'Здесь будет Ваш адрес','services':[],'hasPlog':'f','hasGates':'f','hasConfirm':'t','contractOwner':'f','houseId':'0','flatId':'0'})
     else:
         for itemd in addList:
             uid = itemd['uid']
@@ -652,7 +716,7 @@ async def address_getSettingsList():
             contractName = "Договор " + clientId
             houseId = str(itemd['uid'])
             address = itemd['address']
-            data.append({'address':address,'services':['internet','iptv','ctv','phone','cctv','domophone'],'hasPlog':'t','hasGates':'t','contractOwner':'t','clientId':clientId,'contractName':contractName,'houseId':houseId, 'flatNumber':'0'})
+            data.append({'address':address,'services':['internet','iptv','ctv','phone','cctv','domophone'],'hasPlog':'t','hasGates':'t','hasConfirm':bool2str(uidConfirmPassport(uid)),'contractOwner':'t','clientId':clientId,'contractName':contractName,'houseId':houseId,'flatId':houseId, 'flatNumber':'0'})
             exists = db.session.query(db.exists().where(Settings.uid==uid)).scalar()
             db.session.remove()
             if not exists:
@@ -669,7 +733,9 @@ async def address_intercom():
     global response
     access_verification(request.headers)
     request_data = json_verification(request)
-    if 'houseId' in request_data:
+    if 'flatId' in request_data:
+        uid = int(request_data['flatId'])
+    elif 'houseId' in request_data:
         uid = int(request_data['houseId'])
     else:
         response = app.response_class(status=404, mimetype='application/json')
@@ -696,6 +762,8 @@ async def address_intercom():
                 db.session.query(Settings).filter_by(uid=uid).update({'guest' : guest})
                 db.session.commit()
                 db.session.remove()
+            if 'pushPlog' in settings:
+                pushPlog = settings['pushPlog']
             if 'whiteRabbit' in settings:
                 if str(settings['whiteRabbit']) == '0':
                     w_rabbit = False
@@ -720,7 +788,7 @@ async def address_intercom():
         FRSDisabled = bool2str(not row['frs'])
         code = str(row['code'])
         guest = row['guest'].strftime("%Y-%m-%d %H:%M:%S")
-        response = {'code':200,'name':'OK','message':'Хорошо','data':{'allowDoorCode':'t','doorCode':code,'CMS':CMS,'VoIP':VoIP,'autoOpen':guest,'whiteRabbit':whiteRabbit,'disablePlog':'f', 'hiddenPlog':'f','FRSDisabled':FRSDisabled}}
+        response = {'code':200,'name':'OK','message':'Хорошо','data':{'allowDoorCode':'t','doorCode':code,'CMS':CMS,'VoIP':VoIP,'autoOpen':guest,'whiteRabbit':whiteRabbit,'pushPlog':'t','disablePlog':'f', 'hiddenPlog':'f','FRSDisabled':FRSDisabled}}
         return jsonify(response)
     except:
         response = app.response_class(status=404, mimetype='application/json')
@@ -778,9 +846,9 @@ async def address_openDoor():
         fileurl = imgarchivedir + '/' + str(image)  + '.jpg'
         clickhouse_data = [[date, eventuuid, image, int(uid), device_id, title, 4, detail, 1, str(phone)],]
         clickhouse_column = ['date', 'uuid', 'image', 'uid', 'objectId', 'mechanizmaDescription', 'event', 'detail', 'preview', 'phone']
-        putEvent(clickhouse_data, clickhouse_column)
+        executor.submit(putEvent,clickhouse_data, clickhouse_column)
         if camsrow['camshot']:
-            getcamshot(camsrow['camshot'],fileurl)
+            executor.submit(getcamshot,camsrow['camshot'],fileurl)
     odresponse = app.response_class(status=204, mimetype='application/json')
     return odresponse
 
@@ -789,7 +857,9 @@ async def address_plog():
     global response
     access_verification(request.headers)
     request_data = json_verification(request)
-    if 'houseId' in request_data:
+    if 'flatId' in request_data:
+        uid = int(request_data['flatId'])
+    elif 'houseId' in request_data:
         uid = int(request_data['houseId'])
     else:
         response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
@@ -833,7 +903,9 @@ async def address_plogDays():
     global response
     access_verification(request.headers)
     request_data = json_verification(request)
-    if 'houseId' in request_data:
+    if 'flatId' in request_data:
+        uid = int(request_data['flatId'])
+    elif 'houseId' in request_data:
         uid = int(request_data['houseId'])
     else:
         response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
@@ -896,7 +968,9 @@ async def address_resend():
     global response
     access_verification(request.headers)
     request_data = json_verification(request)
-    if 'houseId' in request_data:
+    if 'flatId' in request_data:
+        uid = int(request_data['flatId'])
+    elif 'houseId' in request_data:
         uid = int(request_data['houseId'])
     else:
         response = app.response_class(status=404, mimetype='application/json')
@@ -908,7 +982,9 @@ async def address_resetCode():
     global response
     access_verification(request.headers)
     request_data = json_verification(request)
-    if 'houseId' in request_data:
+    if 'flatId' in request_data:
+        uid = int(request_data['flatId'])
+    elif 'houseId' in request_data:
         uid = int(request_data['houseId'])
     else:
         response = app.response_class(status=404, mimetype='application/json')
@@ -1108,6 +1184,8 @@ async def cctv_recPrepare():
     cur = pycurl.Curl()
     cur.setopt(cur.URL, url)
     cur.setopt(cur.WRITEDATA, fil)
+    cur.setopt(cur.SSL_VERIFYPEER, 0)
+    cur.setopt(cur.SSL_VERIFYHOST, 0)
     cur.perform()
     resCode = cur.getinfo(cur.RESPONSE_CODE)
     resText = cur.getinfo(cur.HTTP_CODE)
@@ -1121,7 +1199,7 @@ async def cctv_recPrepare():
         response = {'code':200,'name':'OK','message':'Хорошо', 'data':recordId }
         return jsonify(response)
     else:
-        response = {'code':resCode,'name':resText,'message':resTex}
+        response = {'code':resCode,'name':resText,'message':resText}
         abort (resCode)
 
 @app.route('/api/cctv/youtube', methods=['POST'])
@@ -1273,9 +1351,9 @@ async def geo_coder():
     access_verification(request.headers)
     request_data = json_verification(request)
     address = request_data['address']
-    loc = 'Липецк Победы 106а 38'
-    location = geocode(loc, provider="nominatim" , user_agent = 'my_request')
-    point = location.geometry.iloc[0]
+#    loc = 'Липецк Победы 106а 38'
+#    location = geocode(loc, provider="nominatim" , user_agent = 'my_request')
+#    point = location.geometry.iloc[0]
 #    print('Name: '+ loc )
 #    print('complete address: '+ location.address.iloc[0])
 #    print('longitude: {} '.format(point.x))
@@ -1325,21 +1403,21 @@ async def inbox_alert():
     global response
     access_verification(request.headers)
     request_data = json_verification(request)
-    return "Hello, World!"
+    return "Hello1, World!"
 
 @app.route('/api/inbox/chatReaded', methods=['POST'])
 async def inbox_chatReaded():
     global response
     access_verification(request.headers)
     request_data = json_verification(request)
-    return "Hello, World!"
+    return "Hello2, World!"
 
 @app.route('/api/inbox/delivered', methods=['POST'])
 async def inbox_delivered():
     global response
     access_verification(request.headers)
     request_data = json_verification(request)
-    return "Hello, World!"
+    return "Hello3, World!"
 
 @app.route('/api/inbox/inbox', methods=['POST'])
 async def inbox_inbox():
@@ -1351,7 +1429,8 @@ async def inbox_inbox():
     #request_data = request.get_json()
     #response = {'code':200,'name':'OK','message':'Хорошо','data':{'count':0,'chat':0}}
     ##response = {'code':200,'name':'OK','message':'Хорошо','data':{"basePath": "https://dm.lanta.me\/", "code": "<!DOCTYPE html>\n<html lang=\"ru\">\n<head>\n    <meta charset=\"UTF-8\">\n    <title>inbox<\/title>\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no\">\n    <!--\n    <link rel=\"stylesheet\" href=\"reset.css\">\n    <link rel=\"stylesheet\" href=\"styles.css\">\n    -->\n    <style type=\"text\/css\">\n        @font-face {\n            font-family: \"SourceSansPro\";\n            src: url(\"static\/fonts\/sourcesanspro\/sourcesanspro.ttf\");\n        }\n\n        @font-face {\n            font-family: \"SourceSansProBold\";\n            src: url(\"static\/fonts\/sourcesanspro\/sourcesansprobold.ttf\");\n        }\n\n        @font-face {\n            font-family: \"SourceSansProItalic\";\n            src: url(\"static\/fonts\/sourcesanspro\/sourcesansproitalic.ttf\");\n        }\n\n        @font-face {\n            font-family: \"SourceSansProLight\";\n            src: url(\"static\/fonts\/sourcesanspro\/sourcesansprolight.ttf\");\n        }\n\n        @font-face {\n            font-family: \"SourceSansProSemiBold\";\n            src: url(\"static\/fonts\/sourcesanspro\/sourcesansprosemibold.ttf\");\n        }\n\n        *, *::before, *::after {\n            box-sizing: border-box;\n        }\n\n        html, body {\n            width: 100%;\n            height: 100%;\n            font-family: SourceSansPro, sans-serif;\n            font-size: 14px;\n            background: #f3f4fa;\n            overflow-x: hidden;\n        }\n\n        h1, .h1,\n        h2, .h2,\n        h3, .h3,\n        h4, .h4,\n        h5, .h5,\n        h6, .h6 {\n            margin-top: 0;\n            margin-bottom: 0;\n            font-family: SourceSansProBold, sans-serif;\n            font-weight: normal;\n            color: #28323e;\n        }\n\n        h1, .h1 {\n            font-size: 32px;\n            line-height: 120%;\n        }\n\n        h2, .h2 {\n            font-size: 28px;\n            line-height: 120%;\n        }\n\n        h3, .h3 {\n            font-size: 24px;\n            line-height: 24px;\n        }\n\n        h4, .h4 {\n            font-size: 20px;\n            line-height: 24px;\n        }\n\n        h5, .h5 {\n            font-size: 18px;\n            line-height: 24px;\n        }\n\n        h6, .h6 {\n            font-size: 16px;\n            line-height: 24px;\n        }\n\n        .text-1,\n        .text-2,\n        .text-3,\n        .text-4,\n        .text-5 {\n            font-family: SourceSansPro, sans-serif;\n            line-height: 100%;\n        }\n\n        .text-1 {\n            font-family: SourceSansProSemiBold, sans-serif;\n            font-size: 18px;\n        }\n\n        .text-2 {\n            font-size: 16px;\n        }\n\n        .text-3 {\n            font-size: 14px;\n        }\n\n        .text-4 {\n            font-size: 13px;\n        }\n\n        .text-5 {\n            font-size: 12px;\n        }\n\n        .inbox-block {\n            padding: 20px 16px;\n        }\n\n        .inbox-date,\n        .inbox-message-time {\n            display: block;\n            font-size: 14px;\n            line-height: 18px;\n            color: #6d7a8a;\n            opacity: .5;\n        }\n\n        .inbox-date {\n            margin-bottom: 16px;\n            text-align: center;\n        }\n\n        .inbox-message-time {\n            margin-top: 6px;\n            font-size: 10px;\n            text-align: right;\n        }\n\n        .inbox-message-primary,\n        .inbox-message-secondary {\n            display: flex;\n            margin-bottom: 10px;\n        }\n\n        .inbox-message-content {\n            margin-left: 16px;\n            padding: 20px 12px;\n            padding-bottom: 8px;\n            width: 100%;\n            background: #fff;\n            border-radius: 20px;\n            border-top-left-radius: 0;\n        }\n\n        .inbox-message-secondary .inbox-message-content {\n            margin-left: 50px;\n        }\n\n        .inbox-message-content a {\n            margin-bottom: 10px;\n            line-height: 18px;\n            text-decoration: none;\n            color: #007bff;\n        }\n\n        .inbox-message-content p {\n            margin-bottom: 10px;\n            line-height: 18px;\n            color: #6d7a8a;\n        }\n\n        .inbox-message-primary .inbox-message-content p:first-child {\n            margin-bottom: 16px;\n            font-family: SourceSansProSemiBold;\n            font-size: 18px;\n            line-height: 22px;\n            color: #28323e;\n        }\n\n        .inbox-message-content p:last-child {\n            margin-bottom: 0;\n        }\n\n        .inbox-message-icon {\n            display: inline-block;\n            width: 36px;\n            height: 37px;\n        }\n\n        .inbox-message-icon.icon-avatar {\n            background: url('static\/icon\/avatar.png') 0 0 no-repeat;\n            background-size: 100%;\n        }\n\n        .clearfix:before,\n        .clearfix:after {\n            content: \" \";\n            display: table;\n            clear: both;\n        }\n    <\/style>\n<\/head>\n<body>\n<div class=\"inbox-block\"><span class=\"inbox-date\">19 дек 2021<\/span><div class=\"inbox-message-primary\"><i class=\"inbox-message-icon icon-avatar\"><\/i><div class=\"inbox-message-content\"><p><p>Уважаемые пользователи системы распознавания лиц! В понедельник, 20 декабря, в интервале с 10:00 до 12:00 распознавание лиц на вашем домофоне будет временно недоступно. Приносим извинения за возможные неудобства.<\/p><\/p><span class=\"inbox-message-time\">12:35<\/span><\/div><\/div><span class=\"inbox-date\">19 июл 2021<\/span><div class=\"inbox-message-primary\"><i class=\"inbox-message-icon icon-avatar\"><\/i><div class=\"inbox-message-content\"><p><p>Дорогие жители дома №59а корп. 5 по улице Рылеева! У вас появилась бесплатная возможность протестировать систему открывания домофона с распознаванием по лицу.<br \/>\n<br \/><\/p>\n<ol>\n<li>Установите самую свежую версию приложения «ЛАНТА».<br \/><\/li>\n<li>В приложении в настройках адреса включите опции «Распознавание лиц» и «Вести журнал событий» (журнал событий ведётся для каждой квартиры в отдельности, доступа к событиям других квартир нет).<br \/><\/li>\n<li>Откройте дверь подъезда электронным ключом или совершите вызов в свою квартиру через домофон, чтобы в истории событий появились фотографии с вашим изображением.<br \/><\/li>\n<li>В приложении в журнале событий под вашим фото нажмите кнопку «Свой», чтобы добавить лицо в список лиц для открывания домофона.<br \/><\/li>\n<li>При необходимости можно добавить несколько своих лиц для лучшего распознавания (в головном уборе, в очках, с макияжем, с разными причёсками, в инфракрасной подсветке в тёмное время суток).<\/li>\n<\/ol><\/p><span class=\"inbox-message-time\">15:15<\/span><\/div><\/div><span class=\"inbox-date\">16 июл 2021<\/span><div class=\"inbox-message-primary\"><i class=\"inbox-message-icon icon-avatar\"><\/i><div class=\"inbox-message-content\"><p><p><a target=\"_blank\" href=\"https:\/\/stat.lanta-net.ru\">https:\/\/stat.lanta-net.ru<\/a> Имя пользователя: f101182 Пароль: 964f0d7a5<\/p><\/p><span class=\"inbox-message-time\">11:09<\/span><\/div><\/div><span class=\"inbox-date\">29 июн 2021<\/span><div class=\"inbox-message-primary\"><i class=\"inbox-message-icon icon-avatar\"><\/i><div class=\"inbox-message-content\"><p><p>Дорогие жители дома №5б по улице Пионерской! У вас появилась бесплатная возможность протестировать систему открывания домофона с распознаванием по лицу.<br \/>\n<br \/><\/p>\n<ol>\n<li>Установите самую свежую версию приложения «ЛАНТА».<br \/><\/li>\n<li>В приложении в настройках адреса включите опции «Распознавание лиц» и «Вести журнал событий» (журнал событий ведётся для каждой квартиры в отдельности, доступа к событиям других квартир нет).<br \/><\/li>\n<li>Откройте дверь подъезда электронным ключом или совершите вызов в свою квартиру через домофон, чтобы в истории событий появились фотографии с вашим изображением.<br \/><\/li>\n<li>В приложении в журнале событий под вашим фото нажмите кнопку «Свой», чтобы добавить лицо в список лиц для открывания домофона.<br \/><\/li>\n<li>При необходимости можно добавить несколько своих лиц для лучшего распознавания (в головном уборе, в очках, с макияжем, с разными причёсками, в инфракрасной подсветке в тёмное время суток).<\/li>\n<\/ol><\/p><span class=\"inbox-message-time\">20:27<\/span><\/div><\/div><span class=\"inbox-date\">15 янв 2021<\/span><div class=\"inbox-message-primary\"><i class=\"inbox-message-icon icon-avatar\"><\/i><div class=\"inbox-message-content\"><p><p>В вашу учетную запись добавлен новый адрес<\/p><\/p><span class=\"inbox-message-time\">10:38<\/span><\/div><\/div><div class=\"inbox-message-secondary\"><div class=\"inbox-message-content\"><p><p>В вашу учетную запись добавлен новый адрес<\/p><\/p><span class=\"inbox-message-time\">10:32<\/span><\/div><\/div><div class=\"inbox-message-secondary\"><div class=\"inbox-message-content\"><p><p>В вашу учетную запись добавлен новый адрес<\/p><\/p><span class=\"inbox-message-time\">10:30<\/span><\/div><\/div><div class=\"inbox-message-secondary\"><div class=\"inbox-message-content\"><p><p>Ваш пароль на портале видеонаблюдения tD3dcU<\/p><\/p><span class=\"inbox-message-time\">10:30<\/span><\/div><\/div><div class=\"inbox-message-secondary\"><div class=\"inbox-message-content\"><p><p>Ваш код подтверждения: 5749<\/p><\/p><span class=\"inbox-message-time\">10:23<\/span><\/div><\/div><\/div>\n<script type=\"application\/javascript\">\n\/\/    scrollingElement = (document.scrollingElement || document.body)\n\/\/    scrollingElement.scrollTop = scrollingElement.scrollHeight;\n<\/script>\n<\/body>\n<\/html>"}}
-    response = {'code':200,'name':'OK','message':'Хорошо','data':{'basePath': 'https:\/\/dm.lanta.me\/', 'code': 'Hello Word'}}
+    response = {'code':200,'name':'OK','message':'Хорошо','data':{'basePath': 'https:\/\/dm.axiostv.ru\/', 'code': ''}}
+#    response = {'code':200,'name':'OK','message':'Хорошо','data':{'basePath': 'https:\/\/dm.axiostv.ru\/', 'code': '\n\n\n\nВнимание! \nВ соответствии с ФЗ О связи и постановлением правительства №538 от 27 августа 2005г. всем пользователям интернета необходимо актуализовать паспортные данные. Для своих клиентов компания «АКСИОСТВ» предлагает как стандартный способ, на бумажных носителях (в офисе компании или по месту получения услуги), так и электронное подтверждение. Для электронного подтверждения необходимо перейти в мобильном приложении в раздел «Меню» (нижняя правая кнопка), далее «Настройки договора» и нажать «Удостоверить личность». В открывшимся окне необходимо навести камеру на разворот документа, подтверждающего личность (паспорт), добиться совмещение рамки с границами документа, а так же четкого читаемого изображения и нажать кнопку внизу «Подтвердить личность». После проверки (занимает около одного рабочего дня), кнопка «Удостоверить личность» смениться на «Личность подтверждена». Дополнительную информацию можно получить по т. +7 904 684 0003'}}
     return jsonify(response)
 
 @app.route('/api/inbox/readed', methods=['POST'])
@@ -1359,7 +1438,7 @@ async def inbox_readed():
     global response
     access_verification(request.headers)
     request_data = json_verification(request)
-    return "Hello, World!"
+    return "Hello5, World!"
 
 @app.route('/api/inbox/unreaded', methods=['POST'])
 async def inbox_unreaded():
@@ -1369,7 +1448,8 @@ async def inbox_unreaded():
 #        response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
 #        abort (422)
 #    request_data = request.get_json()
-    response = {'code':200,'name':'OK','message':'Хорошо','data':{'count':0,'chat':0}}
+    goodCode = 201 if main_screen_address == 'True' and len(addressList(phone)) != 0 else 200
+    response = {'code':goodCode,'name':'OK','message':'Хорошо','data':{'count':0,'chat':0}}
     return jsonify(response)
 
 
@@ -1390,8 +1470,13 @@ async def issues_comment():
 @app.route('/api/issues/create', methods=['POST'])
 async def issues_create():
     global response
-    access_verification(request.headers)
+    phone = access_verification(request.headers)
     request_data = json_verification(request)
+    imot = db.session.query(Users).filter_by(userphone=int(phone)).first()
+    db.session.remove()
+    subject = 'Запрос с сервера мобильных приложений.'
+    body = f"{request_data['issue']['description']} +7{str(phone)[1:]} {imot.name} {imot.patronymic}"
+    send_email(tp_email, subject, body, shortserverurl)
     response = {'code':200,'name':'OK','message':'Хорошо', 'data':"123"}
     return jsonify(response)
 
@@ -1555,19 +1640,20 @@ async def sip_helpMe():
 @app.route('/api/user/addMyPhone', methods=['POST'])
 async def user_addMyPhone():
     global response
-    access_verification(request.headers)
+    phone = access_verification(request.headers)
     request_data = json_verification(request)
     if not 'login' in request_data or not 'password' in request_data:
         response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
         abort (422)
     login = request_data['login']
     password = request_data['password']
-    if 'comment' in request_data:
-        comment = request_data['comment']
-    if 'notification' in request_data:
-        notification = request_data['notification']
-    response = app.response_class(status=204, mimetype='application/json')
-    return response
+    if permit_addmyphone == 'False':
+        return app.response_class(status=404, mimetype='application/json')
+    goodCode = 201 if main_screen_address == 'True' else 200
+    res = addMyPhone(login,password,phone)
+    code = goodCode if res else 403
+    response = {'code':code,'name':'OK','message':'Хорошо'}
+    return jsonify(response)
 
 @app.route('/api/user/appVersion', methods=['POST'])
 async def user_appVersion():
@@ -1650,6 +1736,7 @@ async def user_confirmCode():
     db.session.query(Temps).filter_by(userphone=int(userPhone)).delete()
     db.session.commit()
     db.session.remove()
+    executor.submit(userUpdate, userPhone, accessToken)
     response = {'code':200,'name':'OK','message':'Хорошо','data':{'accessToken':accessToken,'names':{'name':request_data['name'],'patronymic':request_data['patronymic']}}}
     return jsonify(response)
 
@@ -1738,8 +1825,6 @@ async def user_requestCode():
             print(f'HTTP error occurred: {http_err}')
         except Exception as err:
             print(f'Other error occurred: {err}')
-        else:
-            print(f'Success send sms to {user_phone} and text {sms_text}!')
     response = app.response_class(status=204, mimetype='application/json')
     return response
 
@@ -1752,27 +1837,54 @@ async def user_restore():
         response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
         abort (422)
     contract = request_data['contract']
-    if (not 'contactId' in request_data) and (not 'code' in request_data):
-        response = {'code':200,'name':'OK','message':'Хорошо','data':[{'id':'bfe5bc9e5d2b2501767a7589ec3c485c','contact':'sb**@*********.ru','type':'email'},{'id':'064601c186c73c5e47e8dedbab90dd11','contact':'8 (964) ***-*000','type':'phone'}]}
+    if (not 'contact_id' in request_data) and (not 'code' in request_data):
+        if permit_showrestorephoned == 'False':
+            return app.response_class(status=404, mimetype='application/json')
+        response = getRestoreInfo(contract)
         return jsonify(response)
-    if 'contactId' in request_data and (not 'code' in request_data):
-        contactId = request_data['contactId']
-        #print(f"Кто-то сделал POST запрос contactId и передал {contactId}")
+    if 'contact_id' in request_data and (not 'code' in request_data):
+        contact_id = request_data['contact_id']
+        phone = int(getRestorePhone(contract, contact_id))
+        if permit_restorepasswd == 'False':
+            return app.response_class(status=404, mimetype='application/json')
+        sms_code = int(str(randint(1, 9)) + str(randint(0, 9)) + str(randint(0, 9)) + str(randint(0, 9)))
+        sms_text = os.getenv('SMS_TEXT') + str(sms_code)
+        temp_user = Temps(userphone=phone, smscode=sms_code)
+        db.session.query(Temps).filter_by(userphone=phone).delete()
+        db.session.add(temp_user)
+        db.session.commit()
+        db.session.remove()
+        kannel_params2 = (('to', phone), ('text', sms_text.encode('utf-16-be').decode('utf-8').upper()))
+        try:
+            res = requests.get(url=kannel_url, params=kannel_params + kannel_params2)
+            res.raise_for_status()
+        except:
+            pass
         response = app.response_class(status=204, mimetype='application/json')
         return response
-    if (not 'contactId' in request_data) and 'code' in request_data:
-        code = request_data['code']
-        if code ==  code:
-            #print(f"Кто-то сделал POST запрос code и передал {code}")
-            response = app.response_class(status=204, mimetype='application/json')
-            return response
-        else:
-            response = {'code':403,'name':'Forbidden','message':'Запрещено'}
-            abort (403)
-    if 'comment' in request_data:
-        comment = request_data['comment']
-    if 'notification' in request_data:
-        notification = request_data['notification']
+    if 'contact_id' in request_data and 'code' in request_data:
+        contact_id = request_data['contact_id']
+        passwd = getRestorePasswd(contract)
+        sms_text = 'Ваш пароль: ' + str(passwd)
+        phone = int(getRestorePhone(contract, contact_id))
+        try:
+            smsCode = db.session.query(Temps.smscode).filter(Temps.userphone==phone).first()[0]
+            db.session.remove()
+        except:
+            response = {"code":404,"name":"Not Found","message":"Не найдено"}
+            abort(404)
+        if smsCode != int(request_data['code']):
+            response = {"code":403,"name":"Пин-код введен неверно","message":"Пин-код введен неверно"}
+            abort(403)
+        kannel_params2 = (('to', phone), ('text', sms_text.encode('utf-16-be').decode('utf-8').upper()))
+        try:
+            res = requests.get(url=kannel_url, params=kannel_params + kannel_params2)
+            res.raise_for_status()
+        except:
+            pass
+        response = app.response_class(status=204, mimetype='application/json')
+        return response
+    return app.response_class(status=404, mimetype='application/json')
 
 @app.route('/api/user/sendName', methods=['POST'])
 async def user_sendName():
@@ -1788,6 +1900,23 @@ async def user_sendName():
     patronymic = request_data['patronymic']
     db.session.query(Users).filter_by(userphone=int(phone)).update({'name' : name, 'patronymic' : patronymic})
     db.session.commit()
+    response = app.response_class(status=204, mimetype='application/json')
+    return response
+
+@app.route('/api/user/sendPassport', methods=['POST'])
+async def user_sendPassport():
+    global response
+    phone = access_verification(request.headers)
+    request_data = json_verification(request)
+    if not 'houseId' or not 'passport' in request_data or request_data['passport'] == "":
+        response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
+        abort (422)
+    houseId = request_data['houseId']
+    binary_content = base64.b64decode(request_data['passport'])
+    passport = str(houseId) + "_" + str(int(time.time())) + ".jpg"
+    fullpassport = "/base/passport/" + passport
+    with open(fullpassport, 'wb') as file:
+        file.write(binary_content)
     response = app.response_class(status=204, mimetype='application/json')
     return response
 
@@ -1909,58 +2038,293 @@ async def list_pay():
     listPayResponse = {'code':200,'name':'OK','message':'Хорошо', 'data':listPayData}
     return jsonify(listPayResponse)
 
+@app.route('/api/sh/getNode', methods=['POST'])
+async def sh_getNode():
+    global response
+    phone = access_verification(request.headers)
+    request_data = json_verification(request)
+    if not 'houseId' in request_data:
+        response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
+        abort (422)
+    uid = request_data['houseId']
+    rows = db.session.query(Nodes).filter_by(uid=uid).all()
+    resNode = []
+    for row in rows:
+        resNode.append({'nodeUuid':row.node_uuid, 'nodeType':row.node_type, 'nodeName':row.node_name, 'nodeVendor':row.node_vendor, 'nodeUp':row.node_up, 'nodeHwVersion':row.node_hw, 'nodeOsVersion':row.node_os, 'nodeSwVersion':row.node_sw, 'nodeSwDate':row.node_sw_date, 'nodeNeedUpgrade':row.node_needupgrade})
+    db.session.remove()
+    response = {'code':200,'name':'OK','message':'Хорошо','data':resNode}
+    return jsonify(response)
+
+@app.route('/api/sh/delNode', methods=['POST'])
+async def sh_delNode():
+    global response
+    phone = access_verification(request.headers)
+    request_data = json_verification(request)
+    if not 'houseId' or not 'nodeUuid' in request_data:
+        response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
+        abort (422)
+    uid = request_data['houseId']
+    nodeId = request_data['nodeUuid']
+    exists = db.session.query(db.exists().where(Items.uid==uid, Items.node_id==nodeId)).scalar()
+    db.session.remove()
+    if exists:
+        delNodeResponse = {'code':201,'name':'Контроллер с устройствами не может быть удален! Удалите все устройства этого контроллера.','message':'Хорошо'}
+        return jsonify(delNodeResponse)
+    node = db.session.query(Nodes).filter_by(node_uuid=nodeId, uid=uid).with_for_update().first()
+    if node:
+        node.uid = None
+        node.node_name = None
+    db.session.commit()
+    db.session.remove()
+    delNodeResponse = {'code':200,'name':'OK','message':'Хорошо'}
+    return jsonify(delNodeResponse)
+
+@app.route('/api/sh/setNode', methods=['POST'])
+async def sh_setNode():
+    global response
+    phone = access_verification(request.headers)
+    request_data = json_verification(request)
+    if not 'houseId' or not 'nodeType' or not 'nodeName' in request_data:
+        response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
+        abort (422)
+    uid = request_data['houseId']
+    if 'nodeKey' in request_data:
+        node = db.session.query(Nodes).filter_by(node_mac=request_data['nodeKey'], node_type=request_data['nodeType']).with_for_update().first()
+    elif 'nodeId' in request_data:
+        node = db.session.query(Nodes).filter_by(node_uuid=request_data['nodeId'], node_type=request_data['nodeType']).with_for_update().first()
+    else:
+        response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
+        abort (422)
+    name = 'OK'
+    if node:
+        if not node.uid:
+            node.uid = uid
+            node.node_name = request_data['nodeName']
+            code = 200
+        else:
+            if node.uid == uid:
+                code = 201
+                name = 'Этот контроллер уже привязан к Вашему договору.'
+            else:
+                code = 201
+                name = 'Этот контроллер привязан к другому договору. Обратитесь к его владельцу или в техподдержку для решения этого вопроса.'
+    else:
+        code = 201
+        name = 'Этого контроллера нет в базе доступных. Обратитесь в техподдержку для решения этого вопроса.'
+    db.session.commit()
+    db.session.remove()
+    dataNode = {'nodeUuid':'9490357a-3875-43ab-a009-cca7e5862aae', 'nodeError':0, 'nodeNeedUpgrade':False}
+    response = {'code':code,'name':name,'message':'Хорошо','data':dataNode}
+    return jsonify(response)
+
 @app.route('/api/sh/getRooms', methods=['POST'])
 async def sh_getRooms():
     global response
-    access_verification(request.headers)
+    phone = access_verification(request.headers)
+    request_data = json_verification(request)
+    if not 'houseId' in request_data:
+        response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
+        abort (422)
+    uid = request_data['houseId']
+    rows = db.session.query(Rooms).filter_by(uid=uid).all()
     resRooms = []
-    resRooms.append({'roomId':'20553542-be86-4209-b74c-75b3db3269be', 'name':'Спальня', 'priority':3, 'visible':True})
-    resRooms.append({'roomId':'5367a867-198d-4559-ab94-4e1ac99bf2dc', 'name':'Зал', 'priority':2, 'visible':True})
-    resRooms.append({'roomId':'2b4379b4-469b-45d3-b52e-2e0131656ace', 'name':'Прихожая', 'priority':1, 'visible':True})
-    resRooms.append({'roomId':'7a30101b-058a-499f-9f12-3961320d24c1', 'name':'Ванная', 'priority':4, 'visible':True})
-    resRooms.append({'roomId':'168b1156-e9df-433b-8a5c-7937f18af323', 'name':'Кухня', 'priority':5, 'visible':True})
+    for row in rows:
+        resRooms.append({'roomId':row.roomid, 'name':row.name, 'priority':row.priority,'visible':row.visible})
+    db.session.remove()
     response = {'code':200,'name':'OK','message':'Хорошо','data':resRooms}
     return jsonify(response)
+
+@app.route('/api/sh/delRoom', methods=['POST'])
+async def sh_delRoom(): 
+    global response
+    phone = access_verification(request.headers)
+    request_data = json_verification(request)
+    if not 'houseId' or not 'roomId' in request_data:
+        response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
+        abort (422)
+    uid = request_data['houseId']
+    roomId = request_data['roomId']
+    exists = db.session.query(db.exists().where(Items.uid==uid, Items.room_id==roomId)).scalar()
+    db.session.remove()
+    if exists:
+        delRoomResponse = {'code':201,'name':'Комната с устройствами не может быть удалена! Удалите или перенесите из нее все устройства.','message':'Хорошо'}
+        return jsonify(delRoomResponse)
+    delRoomResponse = {'code':200,'name':'OK','message':'Хорошо'}
+    try:
+        room = db.session.query(Rooms).filter_by(uid=uid, roomid=roomId).with_for_update().first()
+        if room is None:
+            db.session.commit()
+            return jsonify(delRoomResponse)
+        db.session.delete(room)
+        db.session.query(Rooms).filter(Rooms.uid == uid, Rooms.priority > room.priority).update({Rooms.priority: Rooms.priority - 1}, synchronize_session=False)
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
+        abort (422)
+    finally:
+        db.session.remove()
+    return jsonify(delRoomResponse)
 
 @app.route('/api/sh/setRoom', methods=['POST'])
 async def sh_setRoom():
     global response
-    access_verification(request.headers)
+    phone = access_verification(request.headers)
     request_data = json_verification(request)
-    code = 204
-    setRoomResponse = {'code':code,'name':'OK','message':'Хорошо'}
+    if not 'houseId' or not 'roomId' or not 'priority' or not 'name' or not 'visible' in request_data:
+        response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
+        abort (422)
+    uid = request_data['houseId']
+    roomId = request_data['roomId']
+    priority = request_data['priority']
+    name = request_data['name']
+    visible = request_data['visible']
+    setRoomResponse = {'code':200,'name':'OK','message':'Хорошо'}
+    try:
+        room = db.session.query(Rooms).filter_by(uid=uid, roomid=roomId).with_for_update().first()
+        if room is None:
+            db.session.query(Rooms).filter(Rooms.uid == uid, Rooms.roomid == roomId, Rooms.priority >= priority).update({Rooms.priority: Rooms.priority + 1}, synchronize_session=False)
+            db.session.add(Rooms(uid=uid, roomid=roomId, priority=priority, name=name, visible=visible))
+            db.session.commit()
+            return jsonify(setRoomResponse)
+        if room.priority == priority:
+            room.name = name
+            room.visible=visible
+            db.session.commit()
+            return jsonify(setRoomResponse)
+        if priority < room.priority:
+            db.session.query(Rooms).filter(Rooms.uid == uid, Rooms.roomid != roomId, Rooms.priority >= priority, Rooms.priority < room.priority).update({Rooms.priority: Rooms.priority + 1}, synchronize_session=False)
+        else:
+            db.session.query(Rooms).filter(Rooms.uid == uid, Rooms.roomid != roomId, Rooms.priority <= priority, Rooms.priority > room.priority).update({Rooms.priority: Rooms.priority - 1}, synchronize_session=False)
+        room.priority = priority
+        room.name = name
+        room.visible=visible
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
+        abort (422)
+    finally:
+        db.session.remove()
     return jsonify(setRoomResponse)
 
 @app.route('/api/sh/getItems', methods=['POST'])
 async def sh_getItems():
     global response
-    access_verification(request.headers)
-    resItemsTypes = ['lamp', 'relay', 'conditioner', 'boiler', 'openedSensor', 'motionSensor', 'presenceSensor', 'fireSensor', 'smokeSensor', 'oxygenSensor', 'carbonSensor']
+    phone = access_verification(request.headers)
+    request_data = json_verification(request)
+    if not 'houseId' in request_data:
+        response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
+        abort (422)
+    uid = request_data['houseId']
+    rows = db.session.query(Items).filter_by(uid=uid).all()
+    resRooms = []
     resItems = []
-    resItems.append({'roomId':'2b4379b4-469b-45d3-b52e-2e0131656ace','itemId':'ec851578-c64e-42df-ba12-9257a1d82f18','type':'lamp','name':'Торшер','priority':2,'visible':True,'getItemData':{}})
-    resItems.append({'roomId':'2b4379b4-469b-45d3-b52e-2e0131656ace','itemId':'ff3c2ecd-2a9a-4d45-a209-a97c5e1f2366','type':'conditioner','name':'Кондиционер','priority':1,'visible':True,'getItemData':{}})
-    resItems.append({'roomId':'2b4379b4-469b-45d3-b52e-2e0131656ace','itemId':'8e00c1cf-bc2b-4938-aa28-9a4b887ad58b','type':'relay','name':'Реле1','priority':3,'visible':True,'getItemData':{}})
-    resItems.append({'roomId':'2b4379b4-469b-45d3-b52e-2e0131656ace','itemId':'a40a3881-ddac-4433-a3cb-48d8fd1a55ae','type':'lamp','name':'Люстра','priority':4,'visible':True,'getItemData':{}})
-    resItems.append({'roomId':'2b4379b4-469b-45d3-b52e-2e0131656ace','itemId':'e1607546-35ef-4434-b51a-02f6805da1b1','type':'lamp','name':'Бра','priority':5,'visible':True,'getItemData':{}})
-    resItems.append({'roomId':'2b4379b4-469b-45d3-b52e-2e0131656ace','itemId':'82f6894d-ccce-492f-b42f-82ada9d32a9f','type':'lamp','name':'Настольная лампа','priority':6,'visible':True,'getItemData':{}})
-    resItems.append({'roomId':'2b4379b4-469b-45d3-b52e-2e0131656ace','itemId':'15fdca24-9fc1-40f4-babd-b41856f785eb','type':'lamp','name':'Зеркало','priority':7,'visible':True,'getItemData':{}})
-    resItems.append({'roomId':'2b4379b4-469b-45d3-b52e-2e0131656ace','itemId':'3f3c9051-7d84-4a44-a9f0-b8aabff6a012','type':'relay','name':'Реле2','priority':8,'visible':True,'getItemData':{}})
-    resItems.append({'roomId':'5367a867-198d-4559-ab94-4e1ac99bf2dc','itemId':'36c69310-b6a9-4613-8dd9-ced7cde6b65b','type':'relay','name':'Реле3','priority':3,'visible':True,'getItemData':{}})
-    resItems.append({'roomId':'5367a867-198d-4559-ab94-4e1ac99bf2dc','itemId':'031b7fea-0942-494c-974f-ca10fc556312','type':'lamp','name':'Люстра','priority':1,'visible':True,'getItemData':{}})
-    resItems.append({'roomId':'5367a867-198d-4559-ab94-4e1ac99bf2dc','itemId':'77ccb241-063d-41b4-b7c6-c88637bae303','type':'relay','name':'Реле4','priority':2,'visible':True,'getItemData':{}})
-    resItems.append({'roomId':'5367a867-198d-4559-ab94-4e1ac99bf2dc','itemId':'9fcea3bd-9476-4ead-a963-14330f2203f7','type':'relay','name':'Реле5','priority':4,'visible':True,'getItemData':{}})
-    resItems.append({'roomId':'5367a867-198d-4559-ab94-4e1ac99bf2dc','itemId':'8235d102-b414-4459-a25c-18607cb12399','type':'relay','name':'Реле6','priority':5,'visible':True,'getItemData':{}})
-    resItems.append({'roomId':'5367a867-198d-4559-ab94-4e1ac99bf2dc','itemId':'19abccb4-1a2a-4870-9e15-82121a82e393','type':'relay','name':'Реле7','priority':6,'visible':True,'getItemData':{}})
+    for row in rows:
+        resItems.append({'nodeId':row.node_id, 'roomId':row.room_id, 'itemId':row.item_id, 'type':row.type, "multitype":row.multitype, "meta":row.meta, 'vendor':row.vendor, 'name':row.name, 'priority':row.priority,'visible':row.visible})
+    db.session.remove()
     response = {'code':200,'name':'OK','message':'Хорошо','data':resItems}
     return jsonify(response)
+
+@app.route('/api/sh/delItem', methods=['POST'])
+async def sh_delItem():
+    global response
+    phone = access_verification(request.headers)
+    request_data = json_verification(request)
+    if not 'houseId' or not 'nodeUuid' or not 'itemId' in request_data:
+        response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
+        abort (422)
+    uid = request_data['houseId']
+    nodeId = request_data['nodeUuid']
+    itemId = request_data['itemId']
+    mqtt_result = await mqtt_rpc.device_remove(nodeId, itemId)
+#    print({"result": mqtt_result.result, "data": mqtt_result.data})
+    if not mqtt_result.result:
+        delItemResponse = {'code':201,'name':mqtt_result.data,'message':'Хорошо'}
+        return jsonify(delItemResponse)
+    delItemResponse = {'code':200,'name':'OK','message':'Хорошо'}
+    try:
+        item = db.session.query(Items).filter_by(uid=uid, item_id=itemId).with_for_update().first()
+        db.session.query(Items).filter(Items.uid == uid, Items.node_id==item.node_id, Items.room_id == item.room_id, Items.item_id == itemId).delete()
+        db.session.query(Items).filter(Items.uid == uid, Items.node_id==item.node_id, Items.room_id == item.room_id, Items.item_id != itemId, Items.priority > item.priority).update({Items.priority: Items.priority - 1}, synchronize_session=False)
+        db.session.commit()
+        return jsonify(delItemResponse)
+    except Exception:
+        db.session.rollback()
+        response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
+        abort (422)
+    finally:
+        db.session.remove()
+    return jsonify(delItemResponse)
+
+@app.route('/api/sh/newItems', methods=['POST'])
+async def sh_newItem():
+    global response
+    phone = access_verification(request.headers)
+    request_data = json_verification(request)
+    if not 'houseId' or not 'nodeUuid' in request_data:
+        response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
+        abort (422)
+    uid = request_data['houseId']
+    nodeId = request_data['nodeUuid']
+    mqtt_result = await mqtt_rpc.device_add(nodeId, uid)
+#    print({"result": mqtt_result.result, "data": mqtt_result.data})
+    code = 200 if mqtt_result.result else 201
+    newItemResponse = {'code':code,'name':mqtt_result.data,'message':'Хорошо'}
+    return jsonify(newItemResponse)
 
 @app.route('/api/sh/setItem', methods=['POST'])
 async def sh_setItem():
     global response
-    access_verification(request.headers)
+    phone = access_verification(request.headers)
     request_data = json_verification(request)
-    code = 204
-    setItemResponse = {'code':code,'name':'OK','message':'Хорошо'}
+    if not 'houseId' or not 'nodeId' or not 'roomId' or not 'itemId' or not 'type' or not 'name' or not 'vendor' or not 'priority' or not 'visible' in request_data:
+        response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
+        abort (422)
+    uid = request_data['houseId']
+    nodeId = request_data['nodeId']
+    roomId = request_data['roomId']
+    itemId = request_data['itemId']
+    name = request_data['name']
+    priority = request_data['priority']
+    visible = request_data['visible']
+    setItemResponse = {'code':200,'name':'OK','message':'Хорошо'}
+    try:
+        item = db.session.query(Items).filter_by(uid=uid, node_id=nodeId, item_id=itemId).with_for_update().first()
+        if item is None:
+            db.session.query(Items).filter(Items.uid == uid, Items.room_id == roomId, Items.priority >= priority).update({Items.priority: Items.priority + 1}, synchronize_session=False)
+            db.session.add(Items(uid=uid, item_id=itemId, room_id=roomId, node_id=nodeId, type=request_data['type'], name=name, vendor=request_data['vendor'], priority=priority, visible=visible))
+            db.session.commit()
+            return jsonify(setItemResponse)
+        if item.room_id==roomId:
+            if item.priority == priority:
+                item.name = name
+                item.visible=visible
+                db.session.commit()
+                return jsonify(setItemResponse)
+            if priority < item.priority:
+                db.session.query(Items).filter(Items.uid == uid, Items.node_id==nodeId, Items.room_id == roomId, Items.item_id != itemId, Items.priority >= priority, Items.priority < item.priority).update({Items.priority: Items.priority + 1}, synchronize_session=False)
+            else:
+                db.session.query(Items).filter(Items.uid == uid, Items.node_id==nodeId, Items.room_id == roomId, Items.item_id != itemId, Items.priority <= priority, Items.priority > item.priority).update({Items.priority: Items.priority - 1}, synchronize_session=False)
+            item.priority = priority
+            item.name = name
+            item.visible=visible
+            db.session.commit()
+        else:
+            db.session.query(Items).filter(Items.uid == uid, Items.node_id==nodeId, Items.room_id == item.room_id, Items.item_id != itemId, Items.priority > item.priority).update({Items.priority: Items.priority - 1}, synchronize_session=False)
+            db.session.query(Items).filter(Items.uid == uid, Items.node_id==nodeId, Items.room_id == roomId, Items.item_id != itemId, Items.priority >= priority).update({Items.priority: Items.priority + 1}, synchronize_session=False)
+            item.room_id=roomId
+            item.priority = priority
+            item.name = name
+            item.visible=visible
+            db.session.commit()
+            return jsonify(setItemResponse)
+    except Exception:
+        db.session.rollback()
+        response = {'code':422,'name':'Unprocessable Entity','message':'Необрабатываемый экземпляр'}
+        abort (422)
+    finally:
+        db.session.remove()
     return jsonify(setItemResponse)
 
 @app.route('/asterisk/aors/single', methods=['POST'])
@@ -2141,6 +2505,7 @@ async def extensions_precall():
     autoOpen = 0
     whiteRabbit = 0
     intercoms = []
+    onlyAudio = 0
     try:
         rights = []
         rights = db.session.query(Rights.uid_right).filter_by(uid=uid).first()[0]
@@ -2164,7 +2529,8 @@ async def extensions_precall():
                 whiteRabbit = 1
     except:
         pass
-    precallres = {'autoBlock':autoBlock, 'manualBlock':manualBlock, 'autoOpen':autoOpen, 'whiteRabbit':whiteRabbit, 'deviceId': deviceId, 'deviceIP': panelIp, 'dtmf':dtmf, 'intercoms':intercoms}
+#        onlyAudio = 1
+    precallres = {'autoBlock':autoBlock, 'manualBlock':manualBlock, 'autoOpen':autoOpen, 'whiteRabbit':whiteRabbit, 'deviceId': deviceId, 'deviceIP': panelIp, 'dtmf':dtmf, 'intercoms':intercoms, 'onlyAudio':onlyAudio}
     return (precallres)
 
 @app.route('/asterisk/extensions/domophone', methods=['POST'])
@@ -2238,19 +2604,19 @@ async def extensions_push():
         platform = 'ios'
     else:
         platform = 'android'
-    data = {'server':shortserverurl,'port':'5401','transport':'tcp','extension':str(req['extension']),'pass':req['hash'],'dtmf':str(req['dtmf']),'image':image,'live':live,'webRtcUrl':webRtcUrl,'noVideoSip':noVideoSip,'timestamp':str(int(datetime.datetime.now().timestamp())),'ttl':'30','callerId':req['callerId'],'platform':platform,'houseId':str(req['uid']),'flatNumber':str(req['flatNumber']),'stun': '','stun_transport':'udp','stunTransport':'udp','type':'call'}
-    data_old = {'server':shortserverurl,'port':'5401','transport':'tcp','extension':str(req['extension']),'pass':req['hash'],'dtmf':str(req['dtmf']),'image':image,'live':live,'timestamp':str(int(datetime.datetime.now().timestamp())),'ttl':'30','callerId':req['callerId'],'platform':platform,'flatNumber':str(req['flatNumber']),'stun': 'stun:37.235.209.140:3478','stun_transport':'udp','stunTransport':'udp',}
+    data = {'server':shortserverurl,'port':'5401','transport':'tcp','extension':str(req['extension']),'pass':req['hash'],'dtmf':str(req['dtmf']),'image':image,'live':live,'webRtcUrl':webRtcUrl,'noVideoSip':noVideoSip,'timestamp':str(int(datetime.datetime.now().timestamp())),'ttl':'30','callerId':req['callerId'],'platform':platform,'houseId':str(req['uid']),'flatId':str(req['uid']),'flatNumber':str(req['flatNumber']),'stun': '','stun_transport':'udp','stunTransport':'udp','type':'call'}
+    data_old = {'server':shortserverurl,'port':'5401','transport':'tcp','extension':str(req['extension']),'pass':req['hash'],'dtmf':str(req['dtmf']),'image':image,'live':live,'timestamp':str(int(datetime.datetime.now().timestamp())),'ttl':'30','callerId':req['callerId'],'platform':platform,'flatId':str(req['uid']),'flatNumber':str(req['flatNumber']),'stun': 'stun:37.235.209.140:3478','stun_transport':'udp','stunTransport':'udp',}
     if req['platform'] == 0:
         message = messaging.Message(android=messaging.AndroidConfig(ttl=datetime.timedelta(seconds=30), priority='high',), data=data, token=registration_token,)
-        response = messaging.send(message)
+        executor.submit(messaging.send,message)
     if req['platform'] == 1:
         print(f"push for iOS")
         message = messaging.Message(apns=messaging.APNSConfig(headers={'apns-priority':'10', 'apns-expiration':str(int(datetime.datetime.now().timestamp()) + 60)},payload=messaging.APNSPayload(aps=messaging.Aps(alert=messaging.ApsAlert(title='Входящий вызов',body=req['callerId'],),category="INCOMING_DOOR_CALL",mutable_content=True,badge=1,sound="default",),),), data=data, token=registration_token,)
 #        message = messaging.Message(apns=messaging.APNSConfig(headers={'apns-priority':'10', 'apns-expiration':str(int(datetime.datetime.now().timestamp()) + 60)},payload=messaging.APNSPayload(aps=messaging.Aps(alert=messaging.ApsAlert(title='Входящий вызов',body=req['callerId'],),mutable_content=True,badge=1,sound="default",),),), data=data, token=registration_token,)
-        response = messaging.send(message)
+        executor.submit(messaging.send,message)
         print(f"push {response}")
     if req['platform'] == 2:
-        harmony_send_message(data,registration_token)
+        executor.submit(harmony_send_message,data,registration_token)
     return ('')
 
 @app.route('/indoor/uidfromuids', methods=['POST'])
@@ -2268,10 +2634,6 @@ async def new_event():
         uid = int( req.get('uid'))
     else:
         return ""
-    data["houseId"] = str(uid)
-    title =""
-    if req.get('title'):
-        title = req.get('title')
     deviceIds = []
     if req.get('deviceId'):
         deviceIds.append(req.get('deviceId'))
@@ -2283,22 +2645,7 @@ async def new_event():
             pass
     isactiv = isActiv(uid, deviceIds)
     if 2 in isactiv.values():
-        phones = userPhones(uid)
-        for phone in phones:
-            row = [r._asdict() for r in db.session.query(Users.pushtoken, Users.platform).filter(Users.userphone == int(phone)).all()]
-            db.session.remove()
-            try:
-                registration_token = row[0]['pushtoken']
-                if row[0]['platform'] == 'android':
-                    message = messaging.Message(android=messaging.AndroidConfig(ttl=datetime.timedelta(seconds=60), priority='high',), data=data, token=registration_token,)
-                    response = messaging.send(message)
-                if row[0]['platform'] == 'ios':
-                    message = messaging.Message(apns=messaging.APNSConfig(headers={'apns-priority':'10', 'apns-expiration':str(int(datetime.datetime.now().timestamp()) + 60)},payload=messaging.APNSPayload(aps=messaging.Aps(alert=messaging.ApsAlert(title=title,body='',),category="INCOMING_DOOR_CALL",mutable_content=True,badge=1,sound="default",),),), data=data, token=registration_token,)
-                    response = messaging.send(message)
-                if row[0]['platform'] == 'harmony':
-                    harmony_send_message(data,registration_token)
-            except:
-                pass
+        sendPush(uid, data)
     return ""
 
 @app.route('/api/worker/workflow', methods=['POST'])
@@ -2310,6 +2657,43 @@ async def worker_workflow():
     {'links':{'patch':{'small':'https://images2.imgbox.com/94/f2/NN6Ph45r_o.png','large':'https://images2.imgbox.com/5b/02/QcxHUb5V_o.png'},'article':'https://www.space.com/3590-spacex-falcon-1-rocket-fails-reach-orbit.html'},'success':False,'details':'Нет контакта в коннекторе','flight_number':1,'name':'Интернет','date_utc':'2023-03-24T22:30:00.000Z'},
     ]
     return jsonify(workflow)
+
+@app.route('/local/api/carnumber', methods=['POST'])
+async def carnumber():
+    global response
+    request_data = json_verification(request)
+    carNumber = request_data['event']
+    externalCamera = request_data['externalCamera']
+    if externalCamera == False:
+        rubetek_ext = 0
+    else:
+        rubetek_ext = 1
+    doorsrow = [r._asdict() for r in db.session.query(Doors.open, Doors.device_id, Doors.cam, Doors.open_trait).filter_by(rubetek_uuid=request_data['uuid'], rubetek_ext=rubetek_ext).all()][0]
+    db.session.remove()
+    uid = uidFromCarNumber(carNumber)
+    opened = 0
+    deviceIds = []
+    deviceIds.append(doorsrow['device_id'])
+    isactiv = isActiv(uid, deviceIds)
+    if 2 in isactiv.values():
+        opened = 1
+        cam_id=doorsrow['cam']
+        camsrow = [r._asdict() for r in db.session.query(Devices.title, Devices.camshot).filter(Devices.device_id==cam_id).all()][0]
+        db.session.remove()
+        title = camsrow['title']
+        date = datetime.datetime.now().replace(microsecond=0)
+        eventuuid = uuid.uuid4()
+        image = uuid.uuid4()
+        detail = 'Номер а/м ' + carNumber
+        fileurl = imgarchivedir + '/' + str(image)  + '.jpg'
+        clickhouse_data = [[date, eventuuid, image, int(uid), cam_id, title, 9, detail, 1, opened, carNumber,],]
+        clickhouse_column = ['date', 'uuid', 'image', 'uid', 'objectId', 'mechanizmaDescription', 'event', 'detail', 'preview', 'opened', 'carNumber']
+        executor.submit(putEvent,clickhouse_data, clickhouse_column)
+        if camsrow['camshot']:
+            executor.submit(getcamshot,camsrow['camshot'],fileurl)
+        data = {'action': 'eventLog', 'eventDate': datetime.datetime.now().strftime("%Y-%m-%d"), 'eventLogId': str(eventuuid), 'title': 'Открытие а/м ' + carNumber}
+        sendPush(uid, data)
+    return jsonify({"jsonrpc": "2.0", "action": bool(opened)})
 
 @app.route('/z5rweb', methods=['POST'])
 @auth.login_required
@@ -2397,3 +2781,4 @@ def not_found(error):
 
 if __name__ == '__main__':
     app.run(debug=True)
+

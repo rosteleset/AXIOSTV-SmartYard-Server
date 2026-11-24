@@ -31,25 +31,12 @@ mkdir smartyard
 
 #CentOS:
 
-yum install -y python3-virtualenv postgresql-server nginx supervisor asterisk redis clickhouse-server
-
-#Проверяем. В итоге должны установиться пакеты:
-
-rpm -qa | grep python3
-
-python3-libs-3.10.10-17.el9.x86_64
-python3-pip-wheel-22.3.1-2.el9.noarch
-python3-virtualenv-20.13.4-500.el9.noarch
-python3-devel-3.10.10-17.el9.x86_64
-python3-setuptools-67.6.0-3.el9.noarch
-python3-3.10.10-17.el9.x86_64
-python3-pip-22.3.1-2.el9.noarch
-python3-setuptools-wheel-67.6.0-3.el9.noarch
+def install -y python3.14 nginx postgresql-server certbot python3-certbot-nginx supervisor asterisk valkey clickhouse-server libcurl-devel
 
 
 #Dabian/Ubuntu:
 
-apt-get install python3-venv postgresql nginx supervisor libcurl4-openssl-dev libssl-dev gcc python3-dev asterisk redis clickhouse-server
+apt-get install python3-venv postgresql nginx supervisor libcurl4-openssl-dev libssl-dev gcc python3-dev asterisk valkey clickhouse-server
 
 #Переносим файл smartyard.ini в /etc/supervisord.d 
 
@@ -70,11 +57,7 @@ python3 -m venv smartyard
 
 #Дале в терминале:
 
-/opt/smartyard/bin/pip install requests flask psycopg2-binary firebase-admin Flask-Migrate Flask-Executor python-dotenv pytz clickhouse-connect pycryptodomex pymysql redis Flask-HTTPAuth tzlocal reportlab num2words pydantic asyncpg "flask[async]" pycurl huawei-push-admin
-
-export PYCURL_SSL_LIBRARY=openssl
-
-/opt/smartyard/bin/pip install pycurl --no-cache-dir
+/opt/smartyard/bin/pip install requests "flask[async]" psycopg2-binary firebase-admin Flask-Migrate Flask-Executor python-dotenv pytz clickhouse-connect pycryptodomex pymysql redis Flask-HTTPAuth tzlocal reportlab num2words pydantic asyncpg pycurl hpa
  
 
 cd smartyard

@@ -70,7 +70,7 @@ python3 -m venv smartyard
 
 #Дале в терминале:
 
-/opt/smartyard/bin/pip install requests flask psycopg2-binary firebase-admin Flask-Migrate python-dotenv geopandas pytz clickhouse-connect pycryptodomex pymysql redis Flask-HTTPAuth tzlocal reportlab num2words pydantic asyncpg flask[async] geopy
+/opt/smartyard/bin/pip install requests flask psycopg2-binary firebase-admin Flask-Migrate Flask-Executor python-dotenv pytz clickhouse-connect pycryptodomex pymysql redis Flask-HTTPAuth tzlocal reportlab num2words pydantic asyncpg "flask[async]" pycurl huawei-push-admin
 
 export PYCURL_SSL_LIBRARY=openssl
 
